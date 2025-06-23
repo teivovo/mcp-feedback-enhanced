@@ -126,17 +126,22 @@
      * 獲取活躍標籤頁
      */
     TabManager.prototype.getActiveTabs = function() {
-        if (!Utils.isLocalStorageSupported()) {
+        // 檢查 localStorage 支援
+        try {
+            if (typeof Storage === "undefined" || !window.localStorage) {
+                return {};
+            }
+        } catch (e) {
             return {};
         }
 
         try {
             const stored = localStorage.getItem(this.storageKey);
-            const tabs = stored ? Utils.safeJsonParse(stored, {}) : {};
+            const tabs = stored ? JSON.parse(stored) : {};
 
             // 清理過期的標籤頁
             const now = Date.now();
-            const expiredThreshold = Utils.CONSTANTS.TAB_EXPIRED_THRESHOLD;
+            const expiredThreshold = 24 * 60 * 60 * 1000; // 24小時
 
             for (const tabId in tabs) {
                 if (tabs.hasOwnProperty(tabId)) {
