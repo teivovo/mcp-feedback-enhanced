@@ -1,0 +1,51 @@
+{
+  "version": "1.0.0",
+  "debug_enabled": false,
+  "desktop_mode": false,
+  "telegram": {
+    "enabled": true,
+    "bot_token": "8004237851:AAEEzbT1_BKF_bkHTUhXQLLMZumIWt67D8g",
+    "chat_id": "507491548",
+    "enable_bridge": true,
+    "enable_auto_forwarding": true,
+    "enable_chunking": true,
+    "include_session_id": true,
+    "include_timestamp": true,
+    "include_project_path": true,
+    "include_details": true,
+    "max_chunk_size": 3000,
+    "preserve_code_blocks": true,
+    "preserve_markdown": true,
+    "add_navigation": true,
+    "add_previews": true,
+    "session_timeout_minutes": 30,
+    "max_concurrent_sessions": 5,
+    "polling_interval_seconds": 1,
+    "allowed_users": [],
+    "rate_limit_messages_per_minute": 30,
+    "enable_command_filtering": true
+  },
+  "logging": {
+    "enabled": true,
+    "level": "info",
+    "enable_telegram_forwarding": false,
+    "max_log_entries": 1000,
+    "include_request_data": true,
+    "include_response_data": true,
+    "log_file_path": null,
+    "rotate_logs": true,
+    "max_log_files": 5
+  },
+  "security": {
+    "enable_encryption": true,
+    "encryption_key_file": ".mcp_key",
+    "enable_access_control": false,
+    "allowed_ips": [],
+    "session_timeout_minutes": 60,
+    "max_failed_attempts": 5,
+    "lockout_duration_minutes": 15
+  },
+  "web_ui_enabled": true,
+  "web_ui_port": 8080,
+  "web_ui_host": "localhost"
+}

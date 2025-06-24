@@ -244,9 +244,10 @@
                     button.disabled = true;
                     break;
                 case Utils.CONSTANTS.FEEDBACK_SUBMITTED:
-                    button.textContent = window.i18nManager ? window.i18nManager.t('buttons.submitted') : '已提交';
-                    button.className = 'btn btn-success';
+                    button.textContent = window.i18nManager ? window.i18nManager.t('buttons.sessionCompleted') : '🔒 Session Completed';
+                    button.className = 'btn btn-session-completed';
                     button.disabled = true;
+                    button.title = window.i18nManager ? window.i18nManager.t('buttons.sessionCompletedTooltip') : 'This session has been completed. Waiting for new MCP call to start fresh session.';
                     break;
             }
         });

@@ -23,11 +23,13 @@ MCP Feedback Enhanced 伺服器主要模組
 重構: 模塊化設計
 """
 
+import asyncio
 import base64
 import io
 import json
 import os
 import sys
+import time
 from typing import Annotated, Any
 
 from fastmcp import FastMCP
@@ -44,6 +46,35 @@ from .utils.error_handler import ErrorHandler, ErrorType
 
 # 導入資源管理器
 from .utils.resource_manager import create_temp_file
+
+# 導入 MCP 日誌中間件
+from .utils.logging_middleware import (
+    get_middleware,
+    log_tool_start,
+    log_tool_end,
+    log_tool_error,
+    log_session_start,
+    log_session_end,
+    log_mcp_tool
+)
+
+# 導入 MCP-Telegram 橋接器
+from .utils.mcp_telegram_bridge import (
+    get_bridge,
+    initialize_bridge,
+    create_telegram_session,
+    end_telegram_session,
+    get_telegram_feedback,
+    clear_telegram_feedback
+)
+
+# 導入配置管理器
+from .utils.config_manager import (
+    initialize_config_manager,
+    get_config_manager,
+    is_telegram_enabled,
+    get_telegram_config
+)
 
 
 # ===== 編碼初始化 =====
@@ -457,6 +488,24 @@ async def interactive_feedback(
     Returns:
         List: 包含 TextContent 和 MCPImage 對象的列表
     """
+    # 生成會話 ID
+    session_id = f"mcp_session_{int(time.time())}_{id(project_directory)}"
+
+    # MCP 日誌記錄 - 工具調用開始
+    call_id = log_tool_start(
+        "interactive_feedback",
+        request_data={
+            "project_directory": project_directory,
+            "summary": summary,
+            "timeout": timeout
+        },
+        session_id=session_id,
+        project_directory=project_directory
+    )
+
+    # 記錄會話開始
+    log_session_start(session_id, project_directory=project_directory)
+
     # 環境偵測
     is_remote = is_remote_environment()
     is_wsl = is_wsl_environment()
@@ -469,6 +518,22 @@ async def interactive_feedback(
         if not os.path.exists(project_directory):
             project_directory = os.getcwd()
         project_directory = os.path.abspath(project_directory)
+
+        # 檢查 Telegram 橋接器是否可用
+        bridge = get_bridge()
+        telegram_session_created = False
+
+        if bridge and bridge.status.value == "connected":
+            # 創建 Telegram 會話
+            # 注意：這裡使用第一個活躍會話的 chat_id，實際應用中需要更好的會話管理
+            if bridge.active_sessions:
+                first_session = list(bridge.active_sessions.values())[0]
+                chat_id = first_session.chat_id
+                telegram_session_created = await create_telegram_session(
+                    session_id, chat_id, project_directory,
+                    user_context={"tool": "interactive_feedback", "summary": summary}
+                )
+                debug_log(f"Telegram 會話創建: {'成功' if telegram_session_created else '失敗'}")
 
         # 使用 Web 模式
         debug_log("回饋模式: web")
@@ -509,6 +574,24 @@ async def interactive_feedback(
             )
 
         debug_log(f"回饋收集完成，共 {len(feedback_items)} 個項目")
+
+        # 結束 Telegram 會話
+        if telegram_session_created:
+            await end_telegram_session(session_id)
+            debug_log("Telegram 會話已結束")
+
+        # 記錄會話結束
+        log_session_end(session_id)
+
+        # MCP 日誌記錄 - 工具調用成功完成
+        log_tool_end(call_id, response_data={
+            "feedback_items_count": len(feedback_items),
+            "has_text": any(item.type == "text" for item in feedback_items),
+            "has_images": any(hasattr(item, 'data') for item in feedback_items),
+            "result_summary": "回饋收集成功",
+            "telegram_session": telegram_session_created
+        })
+
         return feedback_items
 
     except Exception as e:
@@ -522,6 +605,24 @@ async def interactive_feedback(
         # 生成用戶友好的錯誤信息
         user_error_msg = ErrorHandler.format_user_error(e, include_technical=False)
         debug_log(f"回饋收集錯誤 [錯誤ID: {error_id}]: {e!s}")
+
+        # 結束 Telegram 會話（如果已創建）
+        if 'telegram_session_created' in locals() and telegram_session_created:
+            try:
+                await end_telegram_session(session_id)
+                debug_log("Telegram 會話已結束（錯誤情況）")
+            except Exception as cleanup_error:
+                debug_log(f"Telegram 會話清理失敗: {cleanup_error}")
+
+        # 記錄會話結束
+        log_session_end(session_id)
+
+        # MCP 日誌記錄 - 工具調用錯誤
+        log_tool_error(call_id, str(e), error_details={
+            "error_id": error_id,
+            "error_type": type(e).__name__,
+            "operation": "回饋收集"
+        })
 
         return [TextContent(type="text", text=user_error_msg)]
 
@@ -573,10 +674,14 @@ def get_system_info() -> str:
     Returns:
         str: JSON 格式的系統資訊
     """
-    is_remote = is_remote_environment()
-    is_wsl = is_wsl_environment()
+    # MCP 日誌記錄 - 工具調用開始
+    call_id = log_tool_start("get_system_info")
 
-    system_info = {
+    try:
+        is_remote = is_remote_environment()
+        is_wsl = is_wsl_environment()
+
+        system_info = {
         "平台": sys.platform,
         "Python 版本": sys.version.split()[0],
         "WSL 環境": is_wsl,
@@ -594,7 +699,25 @@ def get_system_info() -> str:
         },
     }
 
-    return json.dumps(system_info, ensure_ascii=False, indent=2)
+        result = json.dumps(system_info, ensure_ascii=False, indent=2)
+
+        # MCP 日誌記錄 - 工具調用成功完成
+        log_tool_end(call_id, response_data={
+            "system_info_keys": list(system_info.keys()),
+            "platform": system_info["平台"],
+            "is_remote": system_info["遠端環境"],
+            "is_wsl": system_info["WSL 環境"]
+        })
+
+        return result
+
+    except Exception as e:
+        # MCP 日誌記錄 - 工具調用錯誤
+        log_tool_error(call_id, str(e), error_details={
+            "error_type": type(e).__name__,
+            "operation": "系統資訊獲取"
+        })
+        raise
 
 
 # ===== 主程式入口 =====
@@ -622,6 +745,71 @@ def main():
         debug_log(f"   桌面模式: {'啟用' if desktop_mode else '禁用'}")
         debug_log("   介面類型: Web UI")
         debug_log("   等待來自 AI 助手的調用...")
+
+        # 初始化配置管理器
+        config_manager = initialize_config_manager(
+            config_file="mcp_config.json",
+            enable_encryption=True,
+            auto_save=True
+        )
+        debug_log("   配置管理器: 已初始化")
+
+        # 初始化 MCP 日誌中間件
+        from .utils.logging_middleware import initialize_middleware
+        logging_config = config_manager.get_logging_config()
+        middleware_config = {
+            'log_level': 'debug' if debug_enabled else logging_config.level,
+            'enable_telegram_forwarding': logging_config.enable_telegram_forwarding,
+            'max_log_entries': logging_config.max_log_entries,
+            'include_request_data': logging_config.include_request_data,
+            'include_response_data': logging_config.include_response_data
+        }
+        middleware = initialize_middleware(middleware_config)
+        debug_log("   MCP 日誌中間件: 已初始化")
+
+        # 初始化 Telegram 橋接器（如果配置可用）
+        try:
+            if is_telegram_enabled():
+                telegram_config = get_telegram_config()
+
+                from .utils.telegram_manager import TelegramBotManager
+
+                telegram_manager = TelegramBotManager(
+                    telegram_config.bot_token,
+                    telegram_config.chat_id
+                )
+
+                bridge_config = {
+                    'session_timeout_minutes': telegram_config.session_timeout_minutes,
+                    'max_concurrent_sessions': telegram_config.max_concurrent_sessions,
+                    'enable_auto_forwarding': telegram_config.enable_auto_forwarding,
+                    'message_format': {
+                        'include_session_id': telegram_config.include_session_id,
+                        'include_timestamp': telegram_config.include_timestamp,
+                        'include_project_path': telegram_config.include_project_path,
+                        'include_details': telegram_config.include_details
+                    },
+                    'chunker': {
+                        'max_chunk_size': telegram_config.max_chunk_size,
+                        'preserve_code_blocks': telegram_config.preserve_code_blocks,
+                        'preserve_markdown': telegram_config.preserve_markdown,
+                        'add_navigation': telegram_config.add_navigation,
+                        'add_previews': telegram_config.add_previews
+                    }
+                }
+
+                bridge = initialize_bridge(telegram_manager, middleware, bridge_config)
+                debug_log("   Telegram 橋接器: 已初始化")
+
+                # 啟動橋接器（在背景執行）
+                asyncio.create_task(bridge.start())
+                debug_log("   Telegram 橋接器: 已啟動")
+            else:
+                debug_log("   Telegram 橋接器: 未配置或已停用")
+
+        except Exception as e:
+            debug_log(f"   Telegram 橋接器初始化失敗: {e}")
+
         debug_log("準備啟動 MCP 伺服器...")
         debug_log("調用 mcp.run()...")
 

@@ -861,6 +861,174 @@
                     </div>
                 </div>
 
+                <!-- Telegram 整合設定卡片 -->
+                <div class="settings-card">
+                    <div class="settings-card-header">
+                        <h3 class="settings-card-title" data-i18n="telegram.title">📱 Telegram 整合</h3>
+                    </div>
+                    <div class="settings-card-body">
+                        <!-- 啟用/停用 Telegram 整合 -->
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <div class="setting-label" data-i18n="telegram.enable">啟用 Telegram 整合</div>
+                                <div class="setting-description" data-i18n="telegram.enableDesc">
+                                    啟用後可將 MCP 工具調用和回饋通過 Telegram 機器人發送到您的聊天
+                                </div>
+                            </div>
+                            <div class="setting-control">
+                                <button type="button" id="telegramToggle" class="toggle-btn" aria-label="切換 Telegram 整合">
+                                    <span class="toggle-slider"></span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Telegram 配置區域 -->
+                        <div id="telegramConfig" class="telegram-config-section" style="display: none;">
+                            <!-- Bot Token 設定 -->
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <div class="setting-label" data-i18n="telegram.botToken">Bot Token</div>
+                                    <div class="setting-description" data-i18n="telegram.botTokenDesc">
+                                        從 @BotFather 獲取的 Telegram Bot Token
+                                    </div>
+                                </div>
+                                <div class="setting-control">
+                                    <div class="input-group">
+                                        <input type="password" id="telegramBotToken" class="form-input"
+                                               placeholder="請輸入您的 Bot Token"
+                                               data-i18n-placeholder="telegram.botTokenPlaceholder">
+                                        <button type="button" id="toggleBotTokenVisibility" class="btn btn-secondary input-addon-btn"
+                                                title="顯示/隱藏 Token" data-i18n-title="telegram.toggleTokenVisibility">
+                                            👁️
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Chat ID 設定 -->
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <div class="setting-label" data-i18n="telegram.chatId">Chat ID</div>
+                                    <div class="setting-description" data-i18n="telegram.chatIdDesc">
+                                        接收訊息的聊天 ID 或用戶名（例如：@username 或數字 ID）
+                                    </div>
+                                </div>
+                                <div class="setting-control">
+                                    <input type="text" id="telegramChatId" class="form-input"
+                                           placeholder="@username 或 Chat ID"
+                                           data-i18n-placeholder="telegram.chatIdPlaceholder">
+                                </div>
+                            </div>
+
+                            <!-- 連接測試 -->
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <div class="setting-label" data-i18n="telegram.testConnection">連接測試</div>
+                                    <div class="setting-description" data-i18n="telegram.testConnectionDesc">
+                                        測試 Bot Token 和 Chat ID 是否配置正確
+                                    </div>
+                                </div>
+                                <div class="setting-control">
+                                    <button type="button" id="testTelegramConnection" class="btn btn-secondary">
+                                        <span class="button-icon">🔗</span>
+                                        <span class="button-text" data-i18n="telegram.testConnectionBtn">測試連接</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- 訊息格式設定 -->
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <div class="setting-label" data-i18n="telegram.messageFormat">訊息格式設定</div>
+                                    <div class="setting-description" data-i18n="telegram.messageFormatDesc">
+                                        自定義發送到 Telegram 的訊息格式和內容
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 格式選項 -->
+                            <div class="setting-item setting-sub-item">
+                                <div class="setting-info">
+                                    <div class="setting-label" data-i18n="telegram.includeSessionId">包含會話 ID</div>
+                                </div>
+                                <div class="setting-control">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="telegramIncludeSessionId" checked>
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="setting-item setting-sub-item">
+                                <div class="setting-info">
+                                    <div class="setting-label" data-i18n="telegram.includeTimestamp">包含時間戳記</div>
+                                </div>
+                                <div class="setting-control">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="telegramIncludeTimestamp" checked>
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="setting-item setting-sub-item">
+                                <div class="setting-info">
+                                    <div class="setting-label" data-i18n="telegram.includeProjectPath">包含專案路徑</div>
+                                </div>
+                                <div class="setting-control">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="telegramIncludeProjectPath">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- 連接狀態指示器 -->
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <div class="setting-label" data-i18n="telegram.connectionStatus">連接狀態</div>
+                                </div>
+                                <div class="setting-control">
+                                    <div class="telegram-status-indicator">
+                                        <span class="status-dot" id="telegramStatusDot"></span>
+                                        <span class="status-text" id="telegramStatusText" data-i18n="telegram.disconnected">未連接</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 設定說明和幫助 -->
+                        <div class="setting-item telegram-help-section">
+                            <div class="setting-info">
+                                <div class="setting-label" data-i18n="telegram.setupGuide">設定指南</div>
+                                <div class="setting-description">
+                                    <div class="telegram-setup-steps" data-i18n="telegram.setupSteps">
+                                        <p><strong>1. 創建 Telegram Bot：</strong></p>
+                                        <ul>
+                                            <li>在 Telegram 中搜尋 @BotFather</li>
+                                            <li>發送 /newbot 命令</li>
+                                            <li>按照指示設定 Bot 名稱</li>
+                                            <li>複製獲得的 Bot Token</li>
+                                        </ul>
+                                        <p><strong>2. 獲取 Chat ID：</strong></p>
+                                        <ul>
+                                            <li>向您的 Bot 發送任意訊息</li>
+                                            <li>訪問：https://api.telegram.org/bot&lt;YOUR_BOT_TOKEN&gt;/getUpdates</li>
+                                            <li>在回應中找到您的 Chat ID</li>
+                                        </ul>
+                                        <p><strong>3. 配置並測試：</strong></p>
+                                        <ul>
+                                            <li>在上方輸入 Bot Token 和 Chat ID</li>
+                                            <li>點擊「測試連接」確認配置正確</li>
+                                            <li>啟用 Telegram 整合</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- 會話歷史管理卡片 -->
                 <div class="settings-card">
                     <div class="settings-card-header">

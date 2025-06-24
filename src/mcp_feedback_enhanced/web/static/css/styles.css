@@ -159,6 +159,21 @@ select:disabled {
     cursor: not-allowed;
 }
 
+/* 會話完成狀態的提交按鈕 */
+button.btn-session-completed {
+    background: rgba(158, 158, 158, 0.1) !important;
+    color: #666 !important;
+    border: 1px solid #ccc !important;
+    opacity: 0.6 !important;
+    cursor: not-allowed !important;
+    position: relative;
+}
+
+button.btn-session-completed::before {
+    content: "🔒 ";
+    margin-right: 4px;
+}
+
 /* 響應式圖片 */
 img {
     max-width: 100%;
@@ -1861,6 +1876,185 @@ textarea:-ms-input-placeholder,
     border-color: var(--error-color);
     background: rgba(244, 67, 54, 0.1);
     color: var(--error-color);
+}
+
+/* Telegram 整合設定樣式 */
+.telegram-config-section {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
+}
+
+.telegram-config-section .setting-item {
+    margin-bottom: 20px;
+}
+
+.telegram-config-section .setting-sub-item {
+    margin-left: 20px;
+    margin-bottom: 12px;
+    padding-left: 16px;
+    border-left: 2px solid var(--border-color);
+}
+
+.telegram-config-section .setting-sub-item .setting-info {
+    margin-bottom: 0;
+}
+
+/* Telegram 輸入群組樣式 */
+.telegram-config-section .input-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.telegram-config-section .input-group .form-input {
+    flex: 1;
+    min-width: 0;
+}
+
+.telegram-config-section .input-addon-btn {
+    padding: 8px 12px;
+    font-size: 14px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.telegram-config-section .input-addon-btn:hover {
+    border-color: var(--accent-color);
+    background: rgba(0, 122, 204, 0.1);
+    color: var(--accent-color);
+}
+
+/* Telegram 狀態指示器 */
+.telegram-status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 4px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+}
+
+.telegram-status-indicator .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--border-color);
+    transition: background-color 0.3s ease;
+}
+
+.telegram-status-indicator .status-dot.connected {
+    background: var(--success-color);
+    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+}
+
+.telegram-status-indicator .status-dot.connecting {
+    background: var(--warning-color);
+    animation: pulse 1.5s infinite;
+}
+
+.telegram-status-indicator .status-dot.error {
+    background: var(--error-color);
+    box-shadow: 0 0 0 2px rgba(244, 67, 54, 0.2);
+}
+
+.telegram-status-indicator .status-text {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+/* Telegram 設定說明樣式 */
+.telegram-help-section {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 2px solid var(--border-color);
+}
+
+.telegram-setup-steps {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+}
+
+.telegram-setup-steps p {
+    margin: 12px 0 8px 0;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.telegram-setup-steps ul {
+    margin: 8px 0 16px 20px;
+    padding: 0;
+}
+
+.telegram-setup-steps li {
+    margin-bottom: 4px;
+    list-style-type: disc;
+}
+
+.telegram-setup-steps code {
+    background: var(--bg-tertiary);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    color: var(--accent-color);
+}
+
+/* Telegram 測試按鈕樣式 */
+#testTelegramConnection {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    font-size: 13px;
+    transition: all 0.3s ease;
+}
+
+#testTelegramConnection:hover {
+    border-color: var(--accent-color);
+    background: rgba(0, 122, 204, 0.1);
+    color: var(--accent-color);
+}
+
+#testTelegramConnection.testing {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+#testTelegramConnection.testing .button-icon {
+    animation: spin 1s linear infinite;
+}
+
+#testTelegramConnection.success {
+    border-color: var(--success-color);
+    background: rgba(76, 175, 80, 0.1);
+    color: var(--success-color);
+}
+
+#testTelegramConnection.error {
+    border-color: var(--error-color);
+    background: rgba(244, 67, 54, 0.1);
+    color: var(--error-color);
+}
+
+/* 動畫效果 */
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
 
 /* ===== Markdown 內容樣式 ===== */

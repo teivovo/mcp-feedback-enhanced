@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title }} - MCP Feedback Enhanced</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .status-connected { background-color: #28a745; }
+        .status-disconnected { background-color: #dc3545; }
+        .status-connecting { background-color: #ffc107; animation: pulse 1.5s infinite; }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .log-entry {
+            border-left: 4px solid #e9ecef;
+            padding: 12px;
+            margin-bottom: 8px;
+            background: #f8f9fa;
+            border-radius: 0 4px 4px 0;
+        }
+        .log-entry.success { border-left-color: #28a745; }
+        .log-entry.error { border-left-color: #dc3545; }
+        .log-entry.warning { border-left-color: #ffc107; }
+        
+        .metric-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .metric-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        .session-card {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            background: white;
+        }
+        
+        .session-expired {
+            background-color: #fff3cd;
+            border-color: #ffeaa7;
+        }
+        
+        .config-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .log-search {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .nav-pills .nav-link.active {
+            background-color: #667eea;
+        }
+        
+        .btn-telegram {
+            background-color: #0088cc;
+            border-color: #0088cc;
+            color: white;
+        }
+        
+        .btn-telegram:hover {
+            background-color: #006699;
+            border-color: #006699;
+            color: white;
+        }
+        
+        .real-time-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .real-time-connected {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .real-time-disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .chunk-preview {
+            background: #f1f3f4;
+            border-radius: 4px;
+            padding: 8px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Real-time connection indicator -->
+    <div id="realTimeIndicator" class="real-time-indicator real-time-disconnected">
+        <i class="bi bi-wifi-off"></i> Connecting...
+    </div>
+
+    <div class="container-fluid py-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1 class="h3 mb-0">
+                        <i class="bi bi-telegram text-primary"></i>
+                        Telegram Integration Dashboard
+                    </h1>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-primary btn-sm" onclick="refreshDashboard()">
+                            <i class="bi bi-arrow-clockwise"></i> Refresh
+                        </button>
+                        <button class="btn btn-telegram btn-sm" onclick="testConnection()">
+                            <i class="bi bi-wifi"></i> Test Connection
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Overview -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="metric-card">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <div class="metric-value" id="bridgeStatus">
+                                <span class="status-indicator status-{{ 'connected' if bridge_status.is_running else 'disconnected' }}"></span>
+                                {{ 'Connected' if bridge_status.is_running else 'Disconnected' }}
+                            </div>
+                            <div class="metric-label">Bridge Status</div>
+                        </div>
+                        <i class="bi bi-bridge fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <div class="metric-value" id="activeSessions">{{ bridge_status.active_sessions }}</div>
+                            <div class="metric-label">Active Sessions</div>
+                        </div>
+                        <i class="bi bi-people fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <div class="metric-value" id="messageCorrelations">{{ bridge_status.message_correlations }}</div>
+                            <div class="metric-label">Message Correlations</div>
+                        </div>
+                        <i class="bi bi-chat-dots fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <div class="metric-value" id="pendingFeedback">{{ bridge_status.pending_feedback }}</div>
+                            <div class="metric-label">Pending Feedback</div>
+                        </div>
+                        <i class="bi bi-hourglass-split fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Tabs -->
+        <div class="row">
+            <div class="col-12">
+                <ul class="nav nav-pills mb-4" id="dashboardTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="overview-tab" data-bs-toggle="pill" data-bs-target="#overview" type="button" role="tab">
+                            <i class="bi bi-speedometer2"></i> Overview
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="sessions-tab" data-bs-toggle="pill" data-bs-target="#sessions" type="button" role="tab">
+                            <i class="bi bi-people"></i> Sessions
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="logs-tab" data-bs-toggle="pill" data-bs-target="#logs" type="button" role="tab">
+                            <i class="bi bi-journal-text"></i> Message Logs
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="config-tab" data-bs-toggle="pill" data-bs-target="#config" type="button" role="tab">
+                            <i class="bi bi-gear"></i> Configuration
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="dashboardTabContent">
+                    <!-- Overview Tab -->
+                    <div class="tab-pane fade show active" id="overview" role="tabpanel">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="card-title mb-0">
+                                            <i class="bi bi-activity"></i> Recent Activity
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="recentLogs">
+                                            {% for log in recent_logs[:10] %}
+                                            <div class="log-entry {{ 'success' if log.success else 'error' }}">
+                                                <div class="d-flex justify-content-between align-items-start">
+                                                    <div>
+                                                        <strong>{{ log.tool_name or 'System' }}</strong>
+                                                        <span class="badge bg-secondary ms-2">{{ log.event_type }}</span>
+                                                        {% if log.duration_ms %}
+                                                        <span class="text-muted ms-2">{{ "%.1f"|format(log.duration_ms) }}ms</span>
+                                                        {% endif %}
+                                                    </div>
+                                                    <small class="text-muted">{{ log.timestamp }}</small>
+                                                </div>
+                                                {% if log.session_id %}
+                                                <div class="mt-1">
+                                                    <small class="text-muted">Session: {{ log.session_id[:8] }}...</small>
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="card-title mb-0">
+                                            <i class="bi bi-info-circle"></i> System Info
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <strong>Telegram Enabled:</strong>
+                                            <span class="badge bg-{{ 'success' if telegram_enabled else 'danger' }}">
+                                                {{ 'Yes' if telegram_enabled else 'No' }}
+                                            </span>
+                                        </div>
+                                        <div class="mb-3">
+                                            <strong>Bot Configured:</strong>
+                                            <span class="badge bg-{{ 'success' if telegram_config.bot_token else 'warning' }}">
+                                                {{ 'Yes' if telegram_config.bot_token else 'No' }}
+                                            </span>
+                                        </div>
+                                        <div class="mb-3">
+                                            <strong>Auto Forwarding:</strong>
+                                            <span class="badge bg-{{ 'success' if telegram_config.enable_auto_forwarding else 'secondary' }}">
+                                                {{ 'Enabled' if telegram_config.enable_auto_forwarding else 'Disabled' }}
+                                            </span>
+                                        </div>
+                                        <div class="mb-3">
+                                            <strong>Message Chunking:</strong>
+                                            <span class="badge bg-{{ 'success' if telegram_config.enable_chunking else 'secondary' }}">
+                                                {{ 'Enabled' if telegram_config.enable_chunking else 'Disabled' }}
+                                            </span>
+                                        </div>
+                                        <div class="mb-3">
+                                            <strong>Max Chunk Size:</strong>
+                                            <span class="text-muted">{{ telegram_config.max_chunk_size or 3800 }} chars</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sessions Tab -->
+                    <div class="tab-pane fade" id="sessions" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5>Active Telegram Sessions</h5>
+                            <div>
+                                <button class="btn btn-outline-warning btn-sm" onclick="cleanupExpiredSessions()">
+                                    <i class="bi bi-trash"></i> Cleanup Expired
+                                </button>
+                                <button class="btn btn-outline-primary btn-sm" onclick="refreshSessions()">
+                                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                                </button>
+                            </div>
+                        </div>
+                        <div id="sessionsContainer">
+                            <div class="text-center py-4">
+                                <div class="loading-spinner"></div>
+                                <p class="mt-2 text-muted">Loading sessions...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Logs Tab -->
+                    <div class="tab-pane fade" id="logs" role="tabpanel">
+                        <div class="log-search mb-4">
+                            <h5 class="mb-3">Message Log Search</h5>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">Search Query</label>
+                                    <input type="text" class="form-control" id="logSearchQuery" placeholder="Search in logs...">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Event Type</label>
+                                    <select class="form-select" id="logEventType">
+                                        <option value="">All Events</option>
+                                        <option value="tool_call_start">Tool Call Start</option>
+                                        <option value="tool_call_end">Tool Call End</option>
+                                        <option value="tool_call_error">Tool Call Error</option>
+                                        <option value="session_start">Session Start</option>
+                                        <option value="session_end">Session End</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Tool Name</label>
+                                    <input type="text" class="form-control" id="logToolName" placeholder="Tool name...">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Limit</label>
+                                    <select class="form-select" id="logLimit">
+                                        <option value="25">25</option>
+                                        <option value="50" selected>50</option>
+                                        <option value="100">100</option>
+                                        <option value="200">200</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">&nbsp;</label>
+                                    <button class="btn btn-primary d-block w-100" onclick="searchLogs()">
+                                        <i class="bi bi-search"></i> Search
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="logsContainer">
+                            <div class="text-center py-4">
+                                <div class="loading-spinner"></div>
+                                <p class="mt-2 text-muted">Loading logs...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Configuration Tab -->
+                    <div class="tab-pane fade" id="config" role="tabpanel">
+                        <div class="config-section">
+                            <h5 class="mb-3">Telegram Configuration</h5>
+                            <div id="configContainer">
+                                <div class="text-center py-4">
+                                    <div class="loading-spinner"></div>
+                                    <p class="mt-2 text-muted">Loading configuration...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Dashboard JavaScript -->
+    <script>
+        // WebSocket connection for real-time updates
+        let ws = null;
+        let reconnectAttempts = 0;
+        const maxReconnectAttempts = 5;
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            connectWebSocket();
+            loadSessions();
+            loadLogs();
+            loadConfiguration();
+
+            // Set up tab change handlers
+            document.querySelectorAll('#dashboardTabs button[data-bs-toggle="pill"]').forEach(tab => {
+                tab.addEventListener('shown.bs.tab', function(event) {
+                    const target = event.target.getAttribute('data-bs-target');
+                    if (target === '#sessions') {
+                        loadSessions();
+                    } else if (target === '#logs') {
+                        loadLogs();
+                    } else if (target === '#config') {
+                        loadConfiguration();
+                    }
+                });
+            });
+        });
+
+        // WebSocket connection management
+        function connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/telegram/ws`;
+
+            try {
+                ws = new WebSocket(wsUrl);
+
+                ws.onopen = function() {
+                    console.log('WebSocket connected');
+                    reconnectAttempts = 0;
+                    updateConnectionIndicator(true);
+                };
+
+                ws.onmessage = function(event) {
+                    const data = JSON.parse(event.data);
+                    handleWebSocketMessage(data);
+                };
+
+                ws.onclose = function() {
+                    console.log('WebSocket disconnected');
+                    updateConnectionIndicator(false);
+
+                    // Attempt to reconnect
+                    if (reconnectAttempts < maxReconnectAttempts) {
+                        reconnectAttempts++;
+                        setTimeout(connectWebSocket, 2000 * reconnectAttempts);
+                    }
+                };
+
+                ws.onerror = function(error) {
+                    console.error('WebSocket error:', error);
+                    updateConnectionIndicator(false);
+                };
+
+            } catch (error) {
+                console.error('Failed to connect WebSocket:', error);
+                updateConnectionIndicator(false);
+            }
+        }
+
+        function handleWebSocketMessage(data) {
+            switch (data.type) {
+                case 'status_update':
+                    updateDashboardMetrics(data.data);
+                    break;
+                case 'config_updated':
+                    showNotification('Configuration updated successfully', 'success');
+                    loadConfiguration();
+                    break;
+                case 'session_update':
+                    loadSessions();
+                    break;
+                case 'log_update':
+                    loadLogs();
+                    break;
+                case 'keepalive':
+                case 'pong':
+                    // Keep connection alive
+                    break;
+                default:
+                    console.log('Unknown WebSocket message:', data);
+            }
+        }
+
+        function updateConnectionIndicator(connected) {
+            const indicator = document.getElementById('realTimeIndicator');
+            if (connected) {
+                indicator.className = 'real-time-indicator real-time-connected';
+                indicator.innerHTML = '<i class="bi bi-wifi"></i> Live';
+            } else {
+                indicator.className = 'real-time-indicator real-time-disconnected';
+                indicator.innerHTML = '<i class="bi bi-wifi-off"></i> Disconnected';
+            }
+        }
+
+        function updateDashboardMetrics(status) {
+            document.getElementById('activeSessions').textContent = status.active_sessions || 0;
+            document.getElementById('messageCorrelations').textContent = status.message_correlations || 0;
+            document.getElementById('pendingFeedback').textContent = status.pending_feedback || 0;
+
+            // Update bridge status
+            const bridgeStatusEl = document.getElementById('bridgeStatus');
+            const isRunning = status.is_running || false;
+            const statusClass = isRunning ? 'status-connected' : 'status-disconnected';
+            const statusText = isRunning ? 'Connected' : 'Disconnected';
+
+            bridgeStatusEl.innerHTML = `
+                <span class="status-indicator ${statusClass}"></span>
+                ${statusText}
+            `;
+        }
+
+        // Dashboard functions
+        async function refreshDashboard() {
+            try {
+                const response = await fetch('/telegram/api/status');
+                const data = await response.json();
+                updateDashboardMetrics(data.bridge_status);
+                showNotification('Dashboard refreshed', 'info');
+            } catch (error) {
+                console.error('Failed to refresh dashboard:', error);
+                showNotification('Failed to refresh dashboard', 'error');
+            }
+        }
+
+        async function testConnection() {
+            try {
+                showNotification('Testing Telegram connection...', 'info');
+                const response = await fetch('/telegram/api/test-connection', {
+                    method: 'POST'
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    showNotification('Telegram connection successful!', 'success');
+                } else {
+                    showNotification(`Connection failed: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                console.error('Failed to test connection:', error);
+                showNotification('Failed to test connection', 'error');
+            }
+        }
+
+        async function loadSessions() {
+            try {
+                const response = await fetch('/telegram/api/sessions');
+                const data = await response.json();
+                renderSessions(data.sessions);
+            } catch (error) {
+                console.error('Failed to load sessions:', error);
+                document.getElementById('sessionsContainer').innerHTML =
+                    '<div class="alert alert-danger">Failed to load sessions</div>';
+            }
+        }
+
+        function renderSessions(sessions) {
+            const container = document.getElementById('sessionsContainer');
+
+            if (sessions.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-4">
+                        <i class="bi bi-people fs-1 text-muted"></i>
+                        <p class="mt-2 text-muted">No active sessions</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const sessionsHtml = sessions.map(session => `
+                <div class="session-card ${session.is_expired ? 'session-expired' : ''}">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="mb-1">
+                                Session ${session.session_id.substring(0, 8)}...
+                                ${session.is_expired ? '<span class="badge bg-warning ms-2">Expired</span>' : ''}
+                            </h6>
+                            <p class="mb-1 text-muted">
+                                <i class="bi bi-chat"></i> Chat: ${session.chat_id}
+                            </p>
+                            <p class="mb-1 text-muted">
+                                <i class="bi bi-folder"></i> ${session.project_directory}
+                            </p>
+                            <small class="text-muted">
+                                Started: ${new Date(session.start_time).toLocaleString()}
+                                | Last Activity: ${new Date(session.last_activity).toLocaleString()}
+                            </small>
+                        </div>
+                        <div class="text-end">
+                            <div class="mb-2">
+                                <span class="badge bg-primary">${session.active_mcp_calls} calls</span>
+                                <span class="badge bg-secondary">${session.pending_responses} pending</span>
+                            </div>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-warning" onclick="extendSession('${session.session_id}')"
+                                        title="Extend session">
+                                    <i class="bi bi-clock"></i>
+                                </button>
+                                <button class="btn btn-outline-danger" onclick="endSession('${session.session_id}')"
+                                        title="End session">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML = sessionsHtml;
+        }
+
+        async function endSession(sessionId) {
+            if (!confirm('Are you sure you want to end this session?')) return;
+
+            try {
+                const response = await fetch('/telegram/api/sessions/action', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'end', session_id: sessionId })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showNotification('Session ended successfully', 'success');
+                    loadSessions();
+                } else {
+                    showNotification('Failed to end session', 'error');
+                }
+            } catch (error) {
+                console.error('Failed to end session:', error);
+                showNotification('Failed to end session', 'error');
+            }
+        }
+
+        async function extendSession(sessionId) {
+            try {
+                const response = await fetch('/telegram/api/sessions/action', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'extend', session_id: sessionId })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showNotification('Session extended successfully', 'success');
+                    loadSessions();
+                } else {
+                    showNotification('Failed to extend session', 'error');
+                }
+            } catch (error) {
+                console.error('Failed to extend session:', error);
+                showNotification('Failed to extend session', 'error');
+            }
+        }
+
+        async function cleanupExpiredSessions() {
+            if (!confirm('Are you sure you want to cleanup all expired sessions?')) return;
+
+            try {
+                const response = await fetch('/telegram/api/sessions/action', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'cleanup' })
+                });
+
+                const data = await response.json();
+                showNotification(data.message, 'success');
+                loadSessions();
+            } catch (error) {
+                console.error('Failed to cleanup sessions:', error);
+                showNotification('Failed to cleanup sessions', 'error');
+            }
+        }
+
+        function refreshSessions() {
+            loadSessions();
+            showNotification('Sessions refreshed', 'info');
+        }
+
+        // Logs functions
+        async function loadLogs() {
+            try {
+                const response = await fetch('/telegram/api/logs?limit=50');
+                const data = await response.json();
+                renderLogs(data.logs);
+            } catch (error) {
+                console.error('Failed to load logs:', error);
+                document.getElementById('logsContainer').innerHTML =
+                    '<div class="alert alert-danger">Failed to load logs</div>';
+            }
+        }
+
+        async function searchLogs() {
+            try {
+                const query = document.getElementById('logSearchQuery').value;
+                const eventType = document.getElementById('logEventType').value;
+                const toolName = document.getElementById('logToolName').value;
+                const limit = parseInt(document.getElementById('logLimit').value);
+
+                const searchData = {
+                    query: query || null,
+                    event_type: eventType || null,
+                    tool_name: toolName || null,
+                    limit: limit
+                };
+
+                const response = await fetch('/telegram/api/logs/search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(searchData)
+                });
+
+                const data = await response.json();
+                renderLogs(data.logs);
+                showNotification(`Found ${data.total} matching logs`, 'info');
+            } catch (error) {
+                console.error('Failed to search logs:', error);
+                showNotification('Failed to search logs', 'error');
+            }
+        }
+
+        function renderLogs(logs) {
+            const container = document.getElementById('logsContainer');
+
+            if (logs.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-4">
+                        <i class="bi bi-journal-text fs-1 text-muted"></i>
+                        <p class="mt-2 text-muted">No logs found</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const logsHtml = logs.map(log => `
+                <div class="log-entry ${log.success ? 'success' : 'error'}">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center mb-1">
+                                <strong>${log.tool_name || 'System'}</strong>
+                                <span class="badge bg-secondary ms-2">${log.event_type}</span>
+                                ${log.duration_ms ? `<span class="text-muted ms-2">${log.duration_ms.toFixed(1)}ms</span>` : ''}
+                                ${log.success ? '<i class="bi bi-check-circle text-success ms-2"></i>' : '<i class="bi bi-x-circle text-danger ms-2"></i>'}
+                            </div>
+                            ${log.session_id ? `<div class="mb-1"><small class="text-muted">Session: ${log.session_id.substring(0, 8)}...</small></div>` : ''}
+                            ${log.error_message ? `<div class="text-danger small mb-1">${log.error_message}</div>` : ''}
+                            ${log.telegram_preview ? `
+                                <div class="chunk-preview mt-2">
+                                    <strong>Telegram Preview:</strong><br>
+                                    ${log.telegram_preview.replace(/\n/g, '<br>')}
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div class="text-end">
+                            <small class="text-muted">${new Date(log.timestamp).toLocaleString()}</small>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML = logsHtml;
+        }
+
+        // Configuration functions
+        async function loadConfiguration() {
+            try {
+                const response = await fetch('/telegram/api/config');
+                const data = await response.json();
+                renderConfiguration(data.config);
+            } catch (error) {
+                console.error('Failed to load configuration:', error);
+                document.getElementById('configContainer').innerHTML =
+                    '<div class="alert alert-danger">Failed to load configuration</div>';
+            }
+        }
+
+        function renderConfiguration(config) {
+            const container = document.getElementById('configContainer');
+            const telegramConfig = config.telegram || {};
+
+            const configHtml = `
+                <form id="configForm">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <h6 class="mb-3">Basic Settings</h6>
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="enabled"
+                                           ${telegramConfig.enabled ? 'checked' : ''}>
+                                    <label class="form-check-label" for="enabled">Enable Telegram Integration</label>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="enable_bridge"
+                                           ${telegramConfig.enable_bridge ? 'checked' : ''}>
+                                    <label class="form-check-label" for="enable_bridge">Enable Bridge</label>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="enable_auto_forwarding"
+                                           ${telegramConfig.enable_auto_forwarding ? 'checked' : ''}>
+                                    <label class="form-check-label" for="enable_auto_forwarding">Auto Forwarding</label>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="enable_chunking"
+                                           ${telegramConfig.enable_chunking ? 'checked' : ''}>
+                                    <label class="form-check-label" for="enable_chunking">Message Chunking</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <h6 class="mb-3">Message Formatting</h6>
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="include_session_id"
+                                           ${telegramConfig.include_session_id ? 'checked' : ''}>
+                                    <label class="form-check-label" for="include_session_id">Include Session ID</label>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="include_timestamp"
+                                           ${telegramConfig.include_timestamp ? 'checked' : ''}>
+                                    <label class="form-check-label" for="include_timestamp">Include Timestamp</label>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="include_project_path"
+                                           ${telegramConfig.include_project_path ? 'checked' : ''}>
+                                    <label class="form-check-label" for="include_project_path">Include Project Path</label>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="include_details"
+                                           ${telegramConfig.include_details ? 'checked' : ''}>
+                                    <label class="form-check-label" for="include_details">Include Details</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <h6 class="mb-3">Chunking Settings</h6>
+                            <div class="mb-3">
+                                <label class="form-label" for="max_chunk_size">Max Chunk Size</label>
+                                <input type="number" class="form-control" id="max_chunk_size"
+                                       value="${telegramConfig.max_chunk_size || 3800}" min="100" max="4000">
+                            </div>
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="preserve_code_blocks"
+                                           ${telegramConfig.preserve_code_blocks ? 'checked' : ''}>
+                                    <label class="form-check-label" for="preserve_code_blocks">Preserve Code Blocks</label>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="preserve_markdown"
+                                           ${telegramConfig.preserve_markdown ? 'checked' : ''}>
+                                    <label class="form-check-label" for="preserve_markdown">Preserve Markdown</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <h6 class="mb-3">Session Settings</h6>
+                            <div class="mb-3">
+                                <label class="form-label" for="session_timeout_minutes">Session Timeout (minutes)</label>
+                                <input type="number" class="form-control" id="session_timeout_minutes"
+                                       value="${telegramConfig.session_timeout_minutes || 30}" min="1" max="1440">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label" for="max_concurrent_sessions">Max Concurrent Sessions</label>
+                                <input type="number" class="form-control" id="max_concurrent_sessions"
+                                       value="${telegramConfig.max_concurrent_sessions || 5}" min="1" max="50">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <button type="button" class="btn btn-primary" onclick="saveConfiguration()">
+                            <i class="bi bi-save"></i> Save Configuration
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary ms-2" onclick="loadConfiguration()">
+                            <i class="bi bi-arrow-clockwise"></i> Reset
+                        </button>
+                    </div>
+                </form>
+            `;
+
+            container.innerHTML = configHtml;
+        }
+
+        async function saveConfiguration() {
+            try {
+                const form = document.getElementById('configForm');
+                const formData = new FormData(form);
+
+                // Collect configuration data
+                const configData = {
+                    enabled: document.getElementById('enabled').checked,
+                    enable_bridge: document.getElementById('enable_bridge').checked,
+                    enable_auto_forwarding: document.getElementById('enable_auto_forwarding').checked,
+                    enable_chunking: document.getElementById('enable_chunking').checked,
+                    include_session_id: document.getElementById('include_session_id').checked,
+                    include_timestamp: document.getElementById('include_timestamp').checked,
+                    include_project_path: document.getElementById('include_project_path').checked,
+                    include_details: document.getElementById('include_details').checked,
+                    max_chunk_size: parseInt(document.getElementById('max_chunk_size').value),
+                    preserve_code_blocks: document.getElementById('preserve_code_blocks').checked,
+                    preserve_markdown: document.getElementById('preserve_markdown').checked,
+                    session_timeout_minutes: parseInt(document.getElementById('session_timeout_minutes').value),
+                    max_concurrent_sessions: parseInt(document.getElementById('max_concurrent_sessions').value)
+                };
+
+                const response = await fetch('/telegram/api/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(configData)
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showNotification('Configuration saved successfully', 'success');
+                    refreshDashboard(); // Refresh metrics
+                } else {
+                    showNotification('Failed to save configuration', 'error');
+                }
+            } catch (error) {
+                console.error('Failed to save configuration:', error);
+                showNotification('Failed to save configuration', 'error');
+            }
+        }
+
+        // Utility functions
+        function showNotification(message, type = 'info') {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `alert alert-${type === 'error' ? 'danger' : type === 'success' ? 'success' : 'info'} alert-dismissible fade show position-fixed`;
+            notification.style.cssText = 'top: 70px; right: 20px; z-index: 1060; min-width: 300px;';
+            notification.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+
+            document.body.appendChild(notification);
+
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+
+        // Send periodic ping to keep WebSocket alive
+        setInterval(() => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'ping' }));
+            }
+        }, 30000);
+
+        // Request status updates periodically
+        setInterval(() => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'request_status' }));
+            }
+        }, 10000);
+    </script>
+</body>
+</html>

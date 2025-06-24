@@ -13,9 +13,12 @@ from typing import TYPE_CHECKING
 
 from fastapi import Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, JSONResponse
+from pydantic import BaseModel
 
 from ... import __version__
 from ...debug import web_debug_log as debug_log
+from ...utils.telegram_manager import test_telegram_connection
+from .telegram_routes import setup_telegram_routes
 
 
 if TYPE_CHECKING:
@@ -46,6 +49,9 @@ def load_user_layout_settings() -> str:
 
 def setup_routes(manager: "WebUIManager"):
     """設置路由"""
+
+    # Setup Telegram integration routes
+    setup_telegram_routes(manager.app, manager)
 
     @manager.app.get("/", response_class=HTMLResponse)
     async def index(request: Request):
@@ -531,6 +537,43 @@ async def handle_websocket_message(manager: "WebUIManager", session, data: dict)
 
     else:
         debug_log(f"未知的消息類型: {message_type}")
+
+    # Telegram API 路由
+    class TelegramTestRequest(BaseModel):
+        """Telegram 連接測試請求模型"""
+        bot_token: str
+        chat_id: str
+
+    @manager.app.post("/api/telegram/test")
+    async def test_telegram_bot(request: TelegramTestRequest):
+        """測試 Telegram Bot 連接"""
+        try:
+            debug_log(f"Testing Telegram connection for chat {request.chat_id}")
+
+            # 調用 TelegramBotManager 進行實際連接測試
+            success, message = await test_telegram_connection(
+                request.bot_token,
+                request.chat_id
+            )
+
+            debug_log(f"Telegram test result: {success}, message: {message}")
+
+            return JSONResponse(
+                content={
+                    "success": success,
+                    "message": message
+                }
+            )
+
+        except Exception as e:
+            debug_log(f"Telegram test API error: {e}")
+            return JSONResponse(
+                content={
+                    "success": False,
+                    "message": f"測試失敗: {str(e)}"
+                },
+                status_code=500
+            )
 
 
 async def _delayed_server_stop(manager: "WebUIManager"):

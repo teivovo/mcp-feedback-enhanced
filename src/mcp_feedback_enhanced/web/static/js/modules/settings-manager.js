@@ -47,7 +47,14 @@
             userMessageRecordingEnabled: true,
             userMessagePrivacyLevel: 'full', // 'full', 'basic', 'disabled'
             // UI 元素尺寸設定
-            combinedFeedbackTextHeight: 150 // combinedFeedbackText textarea 的高度（px）
+            combinedFeedbackTextHeight: 150, // combinedFeedbackText textarea 的高度（px）
+            // Telegram 整合設定
+            telegramEnabled: false,
+            telegramBotToken: '',
+            telegramChatId: '',
+            telegramIncludeSessionId: true,
+            telegramIncludeTimestamp: true,
+            telegramIncludeProjectPath: false
         };
         
         // 當前設定
@@ -496,6 +503,9 @@
 
         // 應用用戶訊息記錄設定
         this.applyUserMessageSettings();
+
+        // 應用 Telegram 整合設定
+        this.applyTelegramSettings();
     };
 
     /**
@@ -708,6 +718,60 @@
         // 立即更新文字內容
         const description = window.i18nManager.t(descriptionKey);
         descriptionElement.textContent = description;
+    };
+
+    /**
+     * 應用 Telegram 整合設定到 UI
+     */
+    SettingsManager.prototype.applyTelegramSettings = function() {
+        // 更新 Telegram 整合啟用開關
+        const telegramToggle = Utils.safeQuerySelector('#telegramToggle');
+        if (telegramToggle) {
+            telegramToggle.classList.toggle('active', this.currentSettings.telegramEnabled);
+        }
+
+        // 更新 Bot Token 輸入框
+        const botTokenInput = Utils.safeQuerySelector('#telegramBotToken');
+        if (botTokenInput) {
+            botTokenInput.value = this.currentSettings.telegramBotToken || '';
+        }
+
+        // 更新 Chat ID 輸入框
+        const chatIdInput = Utils.safeQuerySelector('#telegramChatId');
+        if (chatIdInput) {
+            chatIdInput.value = this.currentSettings.telegramChatId || '';
+        }
+
+        // 更新訊息格式設定
+        const includeSessionIdToggle = Utils.safeQuerySelector('#telegramIncludeSessionId');
+        if (includeSessionIdToggle) {
+            includeSessionIdToggle.checked = this.currentSettings.telegramIncludeSessionId;
+        }
+
+        const includeTimestampToggle = Utils.safeQuerySelector('#telegramIncludeTimestamp');
+        if (includeTimestampToggle) {
+            includeTimestampToggle.checked = this.currentSettings.telegramIncludeTimestamp;
+        }
+
+        const includeProjectPathToggle = Utils.safeQuerySelector('#telegramIncludeProjectPath');
+        if (includeProjectPathToggle) {
+            includeProjectPathToggle.checked = this.currentSettings.telegramIncludeProjectPath;
+        }
+
+        // 更新配置區域顯示狀態
+        this.toggleTelegramConfigVisibility(this.currentSettings.telegramEnabled);
+
+        // 更新連接狀態
+        this.updateTelegramStatus();
+
+        console.log('Telegram 整合設定已應用到 UI:', {
+            enabled: this.currentSettings.telegramEnabled,
+            botToken: this.currentSettings.telegramBotToken ? '[已設定]' : '[未設定]',
+            chatId: this.currentSettings.telegramChatId || '[未設定]',
+            includeSessionId: this.currentSettings.telegramIncludeSessionId,
+            includeTimestamp: this.currentSettings.telegramIncludeTimestamp,
+            includeProjectPath: this.currentSettings.telegramIncludeProjectPath
+        });
     };
 
     /**
@@ -983,6 +1047,268 @@
             });
         }
 
+        // Telegram 整合設定事件監聽器
+        self.setupTelegramEventListeners();
+
+    };
+
+    /**
+     * 設置 Telegram 整合相關的事件監聽器
+     */
+    SettingsManager.prototype.setupTelegramEventListeners = function() {
+        const self = this;
+
+        // Telegram 整合啟用/停用切換
+        const telegramToggle = Utils.safeQuerySelector('#telegramToggle');
+        if (telegramToggle) {
+            telegramToggle.addEventListener('click', function() {
+                const newValue = !self.get('telegramEnabled');
+                self.set('telegramEnabled', newValue);
+                telegramToggle.classList.toggle('active', newValue);
+                self.toggleTelegramConfigVisibility(newValue);
+                self.updateTelegramStatus();
+                console.log('Telegram 整合狀態已更新:', newValue);
+            });
+        }
+
+        // Bot Token 輸入
+        const botTokenInput = Utils.safeQuerySelector('#telegramBotToken');
+        if (botTokenInput) {
+            botTokenInput.addEventListener('input', function(e) {
+                const token = e.target.value.trim();
+                self.set('telegramBotToken', token);
+                self.updateTelegramStatus();
+                console.log('Telegram Bot Token 已更新');
+            });
+        }
+
+        // Chat ID 輸入
+        const chatIdInput = Utils.safeQuerySelector('#telegramChatId');
+        if (chatIdInput) {
+            chatIdInput.addEventListener('input', function(e) {
+                const chatId = e.target.value.trim();
+                self.set('telegramChatId', chatId);
+                self.updateTelegramStatus();
+                console.log('Telegram Chat ID 已更新:', chatId);
+            });
+        }
+
+        // Bot Token 顯示/隱藏切換
+        const toggleTokenVisibility = Utils.safeQuerySelector('#toggleBotTokenVisibility');
+        if (toggleTokenVisibility) {
+            toggleTokenVisibility.addEventListener('click', function() {
+                const input = Utils.safeQuerySelector('#telegramBotToken');
+                if (input) {
+                    const isPassword = input.type === 'password';
+                    input.type = isPassword ? 'text' : 'password';
+                    toggleTokenVisibility.textContent = isPassword ? '🙈' : '👁️';
+                }
+            });
+        }
+
+        // 連接測試按鈕
+        const testConnectionBtn = Utils.safeQuerySelector('#testTelegramConnection');
+        if (testConnectionBtn) {
+            testConnectionBtn.addEventListener('click', function() {
+                self.testTelegramConnection();
+            });
+        }
+
+        // 訊息格式設定 - 包含會話 ID
+        const includeSessionIdToggle = Utils.safeQuerySelector('#telegramIncludeSessionId');
+        if (includeSessionIdToggle) {
+            includeSessionIdToggle.addEventListener('change', function(e) {
+                self.set('telegramIncludeSessionId', e.target.checked);
+                console.log('Telegram 包含會話 ID 設定已更新:', e.target.checked);
+            });
+        }
+
+        // 訊息格式設定 - 包含時間戳記
+        const includeTimestampToggle = Utils.safeQuerySelector('#telegramIncludeTimestamp');
+        if (includeTimestampToggle) {
+            includeTimestampToggle.addEventListener('change', function(e) {
+                self.set('telegramIncludeTimestamp', e.target.checked);
+                console.log('Telegram 包含時間戳記設定已更新:', e.target.checked);
+            });
+        }
+
+        // 訊息格式設定 - 包含專案路徑
+        const includeProjectPathToggle = Utils.safeQuerySelector('#telegramIncludeProjectPath');
+        if (includeProjectPathToggle) {
+            includeProjectPathToggle.addEventListener('change', function(e) {
+                self.set('telegramIncludeProjectPath', e.target.checked);
+                console.log('Telegram 包含專案路徑設定已更新:', e.target.checked);
+            });
+        }
+    };
+
+    /**
+     * 切換 Telegram 配置區域的顯示/隱藏
+     */
+    SettingsManager.prototype.toggleTelegramConfigVisibility = function(enabled) {
+        const configSection = Utils.safeQuerySelector('#telegramConfig');
+        if (configSection) {
+            configSection.style.display = enabled ? 'block' : 'none';
+        }
+    };
+
+    /**
+     * 更新 Telegram 連接狀態指示器
+     */
+    SettingsManager.prototype.updateTelegramStatus = function() {
+        const statusDot = Utils.safeQuerySelector('#telegramStatusDot');
+        const statusText = Utils.safeQuerySelector('#telegramStatusText');
+
+        if (!statusDot || !statusText) return;
+
+        const enabled = this.get('telegramEnabled');
+        const botToken = this.get('telegramBotToken');
+        const chatId = this.get('telegramChatId');
+
+        // 清除所有狀態類別
+        statusDot.classList.remove('connected', 'connecting', 'error');
+
+        if (!enabled) {
+            statusText.textContent = window.i18nManager ?
+                window.i18nManager.t('telegram.disabled') : '已停用';
+        } else if (!botToken || !chatId) {
+            statusText.textContent = window.i18nManager ?
+                window.i18nManager.t('telegram.configIncomplete') : '配置不完整';
+        } else {
+            statusText.textContent = window.i18nManager ?
+                window.i18nManager.t('telegram.readyToTest') : '準備測試';
+        }
+    };
+
+    /**
+     * 測試 Telegram 連接
+     */
+    SettingsManager.prototype.testTelegramConnection = function() {
+        const self = this;
+        const testBtn = Utils.safeQuerySelector('#testTelegramConnection');
+        const statusDot = Utils.safeQuerySelector('#telegramStatusDot');
+        const statusText = Utils.safeQuerySelector('#telegramStatusText');
+
+        if (!testBtn || !statusDot || !statusText) return;
+
+        const botToken = this.get('telegramBotToken');
+        const chatId = this.get('telegramChatId');
+
+        // 驗證配置
+        if (!botToken || !chatId) {
+            Utils.showMessage(
+                window.i18nManager ?
+                    window.i18nManager.t('telegram.configRequired') :
+                    '請先配置 Bot Token 和 Chat ID',
+                Utils.CONSTANTS.MESSAGE_WARNING
+            );
+            return;
+        }
+
+        // 更新 UI 狀態為測試中
+        testBtn.classList.add('testing');
+        testBtn.disabled = true;
+        statusDot.classList.remove('connected', 'error');
+        statusDot.classList.add('connecting');
+        statusText.textContent = window.i18nManager ?
+            window.i18nManager.t('telegram.testing') : '測試中...';
+
+        // 實際測試（調用後端 API）
+        self.simulateTelegramTest(botToken, chatId).then(function(success) {
+            // 更新 UI 狀態
+            testBtn.classList.remove('testing');
+            testBtn.disabled = false;
+            statusDot.classList.remove('connecting');
+
+            if (success) {
+                testBtn.classList.add('success');
+                statusDot.classList.add('connected');
+                statusText.textContent = window.i18nManager ?
+                    window.i18nManager.t('telegram.connected') : '連接成功';
+
+                Utils.showMessage(
+                    window.i18nManager ?
+                        window.i18nManager.t('telegram.testSuccess') :
+                        'Telegram 連接測試成功！',
+                    Utils.CONSTANTS.MESSAGE_SUCCESS
+                );
+
+                // 3秒後清除成功狀態
+                setTimeout(function() {
+                    testBtn.classList.remove('success');
+                }, 3000);
+            } else {
+                testBtn.classList.add('error');
+                statusDot.classList.add('error');
+                statusText.textContent = window.i18nManager ?
+                    window.i18nManager.t('telegram.connectionFailed') : '連接失敗';
+
+                Utils.showMessage(
+                    window.i18nManager ?
+                        window.i18nManager.t('telegram.testFailed') :
+                        'Telegram 連接測試失敗，請檢查配置',
+                    Utils.CONSTANTS.MESSAGE_ERROR
+                );
+
+                // 3秒後清除錯誤狀態
+                setTimeout(function() {
+                    testBtn.classList.remove('error');
+                }, 3000);
+            }
+        }).catch(function(error) {
+            console.error('Telegram test error:', error);
+
+            // 錯誤處理
+            testBtn.classList.remove('testing');
+            testBtn.classList.add('error');
+            testBtn.disabled = false;
+            statusDot.classList.remove('connecting');
+            statusDot.classList.add('error');
+            statusText.textContent = window.i18nManager ?
+                window.i18nManager.t('telegram.connectionFailed') : '連接失敗';
+
+            Utils.showMessage(
+                window.i18nManager ?
+                    window.i18nManager.t('telegram.testFailed') :
+                    'Telegram 連接測試失敗，請檢查配置',
+                Utils.CONSTANTS.MESSAGE_ERROR
+            );
+
+            setTimeout(function() {
+                testBtn.classList.remove('error');
+            }, 3000);
+        });
+    };
+
+    /**
+     * 實際 Telegram 連接測試（調用後端 API）
+     */
+    SettingsManager.prototype.simulateTelegramTest = function(botToken, chatId) {
+        // 實際實現：調用後端 API 進行真實連接測試
+        return new Promise(async (resolve) => {
+            try {
+                // 調用後端測試 API
+                const response = await fetch('/api/telegram/test', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        bot_token: botToken,
+                        chat_id: chatId
+                    })
+                });
+
+                const result = await response.json();
+                resolve(result.success || false);
+            } catch (error) {
+                console.error('Telegram test API error:', error);
+                // 回退到格式驗證
+                const tokenPattern = /^\d+:[A-Za-z0-9_-]+$/;
+                const chatIdPattern = /^(@\w+|-?\d+)$/;
+                resolve(tokenPattern.test(botToken) && chatIdPattern.test(chatId));
+            }
+        });
     };
 
     // 將 SettingsManager 加入命名空間

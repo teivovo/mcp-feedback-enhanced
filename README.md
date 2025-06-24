@@ -38,6 +38,7 @@ This is an [MCP server](https://modelcontextprotocol.io/) that establishes **fee
 
 ### 📝 Smart Workflow
 - **Prompt Management**: CRUD operations for common prompts, usage statistics, intelligent sorting
+- **Auto-Submit Feature**: One-click template-based automatic feedback submission with modal template selection
 - **Auto-Timed Submit**: 1-86400 second flexible timer, supports pause, resume, cancel
 - **Session Management & Tracking**: Local file storage, privacy controls, history export, real-time statistics
 - **Connection Monitoring**: WebSocket status monitoring, auto-reconnection, quality indicators
@@ -47,6 +48,14 @@ This is an [MCP server](https://modelcontextprotocol.io/) that establishes **fee
 - **Responsive Design**: Adapts to different screen sizes, modular JavaScript architecture
 - **Audio Notifications**: Built-in multiple sound effects, custom audio upload support, volume control
 - **Smart Memory**: Input box height memory, one-click copy, persistent settings
+
+### 📱 Telegram Integration (NEW!)
+- **Bidirectional Communication**: VSCode ↔ MCP ↔ Telegram chat integration
+- **Smart Message Chunking**: Intelligent content-aware message splitting for Telegram's limits
+- **Session Correlation**: Automatic correlation between MCP calls and Telegram conversations
+- **Real-time Dashboard**: Live monitoring of bridge status, sessions, and message flow
+- **Secure Configuration**: Encrypted bot tokens with comprehensive validation
+- **Production Ready**: Rate limiting, error handling, session management, and monitoring
 - **Multi-language Support**: Traditional Chinese, English, Simplified Chinese, instant switching
 
 ### 🖼️ Images & Media
@@ -149,9 +158,31 @@ uvx mcp-feedback-enhanced@latest test
 }
 ```
 
+**Telegram Integration Configuration** (NEW! - bidirectional communication):
+```json
+{
+  "mcpServers": {
+    "mcp-feedback-enhanced": {
+      "command": "uvx",
+      "args": ["mcp-feedback-enhanced@latest"],
+      "timeout": 600,
+      "env": {
+        "TELEGRAM_BOT_TOKEN": "your_bot_token_here",
+        "TELEGRAM_CHAT_ID": "your_chat_id_here",
+        "TELEGRAM_ENABLED": "true",
+        "TELEGRAM_ENABLE_BRIDGE": "true",
+        "MCP_WEB_PORT": "8080"
+      },
+      "autoApprove": ["interactive_feedback"]
+    }
+  }
+}
+```
+
 **Configuration File Examples**:
 - Desktop Mode: [examples/mcp-config-desktop.json](examples/mcp-config-desktop.json)
 - Web Mode: [examples/mcp-config-web.json](examples/mcp-config-web.json)
+- Telegram Mode: [examples/mcp-config-telegram.json](examples/mcp-config-telegram.json)
 
 ### 3. Prompt Engineering Setup
 For optimal results, add the following rules to your AI assistant:
@@ -174,6 +205,10 @@ For optimal results, add the following rules to your AI assistant:
 | `MCP_DEBUG` | Debug mode | `true`/`false` | `false` |
 | `MCP_WEB_PORT` | Web UI port | `1024-65535` | `8765` |
 | `MCP_DESKTOP_MODE` | Desktop application mode | `true`/`false` | `false` |
+| `TELEGRAM_BOT_TOKEN` | Telegram bot token | Bot token string | - |
+| `TELEGRAM_CHAT_ID` | Telegram chat ID | Chat ID string | - |
+| `TELEGRAM_ENABLED` | Enable Telegram integration | `true`/`false` | `false` |
+| `TELEGRAM_ENABLE_BRIDGE` | Enable MCP-Telegram bridge | `true`/`false` | `false` |
 
 ### Testing Options
 ```bash
