@@ -81,6 +81,7 @@ def setup_routes(manager: "WebUIManager"):
                 "request": request,
                 "project_directory": current_session.project_directory,
                 "summary": current_session.summary,
+                "message_type": getattr(current_session, 'message_type', 'general'),
                 "title": "Interactive Feedback - 回饋收集",
                 "version": __version__,
                 "has_session": True,
@@ -573,6 +574,113 @@ async def handle_websocket_message(manager: "WebUIManager", session, data: dict)
                     "message": f"測試失敗: {str(e)}"
                 },
                 status_code=500
+            )
+
+    # ===== 規則管理 API 路由 =====
+
+    @manager.app.get("/api/rules")
+    async def get_rules():
+        """獲取所有規則"""
+        try:
+            # 這裡應該調用規則引擎的 API
+            # 暫時返回模擬數據
+            mock_rules = {
+                "rules": [
+                    {
+                        "id": "error_report_auto_submit",
+                        "name": "Error Report Auto Submit",
+                        "description": "Automatically submit error reports after 5 minutes",
+                        "message_type": "error_report",
+                        "rule_type": "auto_submit_override",
+                        "value": True,
+                        "timeout_override": 300,
+                        "project_filter": {"type": "all"},
+                        "priority": 100,
+                        "enabled": True
+                    },
+                    {
+                        "id": "code_review_header",
+                        "name": "Code Review Header",
+                        "description": "Add standard header for code review responses",
+                        "message_type": "code_review",
+                        "rule_type": "response_header",
+                        "value": "## Code Review Feedback\n\nThank you for the code review. Here are my responses:\n\n",
+                        "project_filter": {"type": "all"},
+                        "priority": 50,
+                        "enabled": True
+                    }
+                ],
+                "total": 2,
+                "enabled": 2
+            }
+
+            debug_log("返回規則列表")
+            return JSONResponse(content=mock_rules)
+
+        except Exception as e:
+            debug_log(f"獲取規則失敗: {e}")
+            return JSONResponse(
+                status_code=500,
+                content={"status": "error", "message": f"獲取規則失敗: {e!s}"}
+            )
+
+    @manager.app.post("/api/rules/test")
+    async def test_rules(request: Request):
+        """測試規則匹配"""
+        try:
+            data = await request.json()
+            message_type = data.get("message_type", "general")
+            project_path = data.get("project_path", "/test/project")
+
+            # 這裡應該調用規則引擎的測試 API
+            # 暫時返回模擬結果
+            mock_results = {
+                "message_type": message_type,
+                "project_path": project_path,
+                "matching_rules": [
+                    {
+                        "id": "error_report_auto_submit",
+                        "name": "Error Report Auto Submit",
+                        "priority": 100,
+                        "rule_type": "auto_submit_override"
+                    }
+                ] if message_type == "error_report" else [],
+                "total_rules": 2,
+                "matching_count": 1 if message_type == "error_report" else 0
+            }
+
+            debug_log(f"規則測試: {message_type} @ {project_path}")
+            return JSONResponse(content=mock_results)
+
+        except Exception as e:
+            debug_log(f"規則測試失敗: {e}")
+            return JSONResponse(
+                status_code=500,
+                content={"status": "error", "message": f"規則測試失敗: {e!s}"}
+            )
+
+    @manager.app.post("/api/rules")
+    async def create_rule(request: Request):
+        """創建新規則"""
+        try:
+            data = await request.json()
+
+            # 這裡應該調用規則引擎的創建 API
+            # 暫時返回成功響應
+            rule_id = f"rule_{int(time.time())}"
+
+            debug_log(f"創建規則: {rule_id}")
+            return JSONResponse(content={
+                "status": "success",
+                "rule_id": rule_id,
+                "message": "規則創建成功"
+            })
+
+        except Exception as e:
+            debug_log(f"創建規則失敗: {e}")
+            return JSONResponse(
+                status_code=500,
+                content={"status": "error", "message": f"創建規則失敗: {e!s}"}
             )
 
 

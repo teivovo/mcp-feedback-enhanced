@@ -37,8 +37,9 @@
 
 /* ===== 頂部連線監控狀態列 ===== */
 .connection-monitor-bar {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  grid-template-areas: "app-info connection-status quick-actions";
   align-items: center;
   background: var(--panel-header-bg);
   border-bottom: 1px solid var(--panel-border);
@@ -49,15 +50,17 @@
   top: 0;
   z-index: 100;
   gap: 20px;
+  min-height: 60px;
 }
 
 /* 應用資訊區域 */
 .app-info-section {
+  grid-area: app-info;
   display: flex;
   flex-direction: column;
   gap: 4px;
   min-width: 0;
-  flex: 1;
+  justify-self: start;
 }
 
 .app-title {
@@ -91,6 +94,233 @@
   font-weight: bold;
 }
 
+/* ===== 增強的專案上下文樣式 ===== */
+
+.project-context-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.project-info-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.project-name-section {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.project-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.project-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: color 0.2s ease;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px;
+}
+
+.project-name:hover {
+  color: var(--accent-color);
+}
+
+.project-details-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 3px;
+  font-size: 12px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.project-details-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
+
+.project-path-section {
+  font-size: 10px;
+  color: var(--text-secondary);
+  opacity: 0.8;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.project-path-label {
+  flex-shrink: 0;
+}
+
+.project-path-display {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  min-width: 0;
+  max-width: 250px;
+}
+
+.project-path-display:hover {
+  color: var(--accent-color);
+}
+
+.project-status-indicators {
+  display: flex;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.project-type-indicator,
+.agent-context-indicator {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  font-size: 9px;
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+}
+
+.project-type-indicator:hover,
+.agent-context-indicator:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.project-type-indicator .indicator-icon,
+.agent-context-indicator .indicator-icon {
+  font-size: 10px;
+}
+
+.project-type-indicator .indicator-text,
+.agent-context-indicator .indicator-text {
+  font-weight: 500;
+}
+
+/* 專案類型特定樣式 */
+.project-type-indicator.web-project {
+  border-color: #61dafb;
+  color: #61dafb;
+}
+
+.project-type-indicator.mobile-project {
+  border-color: #a4c639;
+  color: #a4c639;
+}
+
+.project-type-indicator.desktop-project {
+  border-color: #68217a;
+  color: #68217a;
+}
+
+.project-type-indicator.api-project {
+  border-color: #ff6b35;
+  color: #ff6b35;
+}
+
+.project-type-indicator.data-project {
+  border-color: #ffd23f;
+  color: #ffd23f;
+}
+
+/* Agent 上下文樣式 */
+.agent-context-indicator.active {
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+  background: rgba(0, 122, 204, 0.1);
+}
+
+/* 訊息類型指示器樣式 */
+.message-type-indicator {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  font-size: 9px;
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+}
+
+.message-type-indicator:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.message-type-indicator .message-type-icon {
+  font-size: 10px;
+}
+
+.message-type-indicator .message-type-name {
+  font-weight: 500;
+}
+
+/* 訊息類型特定樣式 */
+.message-type-indicator.general {
+  border-color: #007acc;
+  color: #007acc;
+}
+
+.message-type-indicator.code_review {
+  border-color: #28a745;
+  color: #28a745;
+}
+
+.message-type-indicator.error_report {
+  border-color: #dc3545;
+  color: #dc3545;
+}
+
+.message-type-indicator.feature_request {
+  border-color: #6f42c1;
+  color: #6f42c1;
+}
+
+.message-type-indicator.documentation {
+  border-color: #17a2b8;
+  color: #17a2b8;
+}
+
+.message-type-indicator.testing {
+  border-color: #fd7e14;
+  color: #fd7e14;
+}
+
+.message-type-indicator.deployment {
+  border-color: #20c997;
+  color: #20c997;
+}
+
+.message-type-indicator.security {
+  border-color: #e83e8c;
+  color: #e83e8c;
+}
+
+/* 舊版相容性 */
 .project-info {
   font-size: 11px;
   color: var(--text-secondary);
@@ -103,11 +333,13 @@
 }
 
 .connection-status-group {
+  grid-area: connection-status;
   display: flex;
   align-items: center;
   gap: 16px;
-  flex: 2;
-  justify-content: space-between;
+  justify-content: center;
+  justify-self: center;
+  min-width: 0;
 }
 
 /* 會話狀態資訊區域 */
@@ -402,11 +634,13 @@
 }
 
 .quick-actions {
+  grid-area: quick-actions;
   display: flex;
   gap: 8px;
-  flex-shrink: 0;
   align-items: center;
   justify-content: flex-end;
+  justify-self: end;
+  min-width: 0;
   min-width: 0;
 }
 
@@ -647,46 +881,203 @@
 }
 
 /* ===== 響應式設計 ===== */
-@media (max-width: 768px) {
+
+/* Large screens (1200px+) - Default grid layout */
+@media (min-width: 1200px) {
   .connection-monitor-bar {
-    flex-direction: column;
-    gap: 8px;
+    grid-template-columns: 1fr auto 1fr;
+    padding: 12px 24px;
+  }
+}
+
+/* Medium screens (992px - 1199px) */
+@media (max-width: 1199px) and (min-width: 992px) {
+  .connection-monitor-bar {
+    grid-template-columns: 1fr auto 1fr;
+    padding: 12px 20px;
+    gap: 16px;
+  }
+
+  .project-info {
+    max-width: 250px;
+  }
+}
+
+/* Small screens (768px - 991px) */
+@media (max-width: 991px) and (min-width: 768px) {
+  .connection-monitor-bar {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "app-info connection-status"
+      "quick-actions quick-actions";
+    gap: 12px;
     padding: 12px 16px;
   }
 
-  .app-info-section {
-    width: 100%;
+  .quick-actions {
+    justify-self: center;
+    grid-column: 1 / -1;
+  }
+
+  .project-info {
+    max-width: 200px;
+  }
+
+  .project-context-container {
+    gap: 3px;
+  }
+
+  .project-name {
+    max-width: 150px;
+    font-size: 11px;
+  }
+
+  .project-path-display {
+    max-width: 180px;
+  }
+
+  .project-status-indicators {
+    gap: 6px;
+  }
+
+  .app-title h1 {
+    font-size: 16px;
+  }
+}
+
+/* Extra small screens (576px - 767px) */
+@media (max-width: 767px) and (min-width: 576px) {
+  .connection-monitor-bar {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "app-info"
+      "connection-status"
+      "quick-actions";
+    gap: 8px;
+    padding: 12px 16px;
     text-align: center;
+  }
+
+  .app-info-section,
+  .connection-status-group,
+  .quick-actions {
+    justify-self: center;
   }
 
   .app-title {
     justify-content: center;
-    flex-wrap: wrap;
   }
 
   .app-title h1 {
     font-size: 16px;
   }
 
-  .connection-status-group {
-    width: 100%;
-    justify-content: center;
-    flex-wrap: wrap;
+  .project-info {
+    max-width: none;
+    text-align: center;
   }
 
-  .connection-status-combined {
-    width: 100%;
-    align-items: center;
+  .connection-status-group {
+    flex-wrap: wrap;
+    justify-content: center;
   }
 
   .detailed-status-info {
-    margin-left: 0;
-    margin-top: 0;
-    justify-content: center;
     flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+  }
+}
+
+/* Very small screens (below 576px) */
+@media (max-width: 575px) {
+  .connection-monitor-bar {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "app-info"
+      "connection-status"
+      "quick-actions";
+    gap: 6px;
+    padding: 8px 12px;
+    text-align: center;
+    font-size: 11px;
   }
 
-  /* 會話管理頁籤響應式調整 */
+  .app-info-section,
+  .connection-status-group,
+  .quick-actions {
+    justify-self: center;
+  }
+
+  .app-title h1 {
+    font-size: 14px;
+  }
+
+  .project-info {
+    font-size: 10px;
+    max-width: none;
+  }
+
+  .connection-status-group {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .detailed-status-info {
+    flex-direction: column;
+    gap: 2px;
+    align-items: center;
+  }
+
+  .websocket-metrics,
+  .session-metrics {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+  }
+
+  .metric {
+    font-size: 10px;
+  }
+
+  /* 專案上下文響應式 */
+  .project-context-container {
+    align-items: center;
+    text-align: center;
+  }
+
+  .project-name-section {
+    justify-content: center;
+  }
+
+  .project-name {
+    max-width: 120px;
+    font-size: 11px;
+  }
+
+  .project-path-section {
+    justify-content: center;
+    font-size: 9px;
+  }
+
+  .project-path-display {
+    max-width: 150px;
+  }
+
+  .project-status-indicators {
+    justify-content: center;
+    gap: 4px;
+  }
+
+  .project-type-indicator,
+  .agent-context-indicator {
+    font-size: 8px;
+    padding: 1px 4px;
+  }
+}
+
+/* 會話管理頁籤響應式調整 */
+@media (max-width: 768px) {
   .session-panel-content {
     gap: 16px;
   }
@@ -695,6 +1086,449 @@
     grid-template-columns: 1fr;
     gap: 8px;
   }
+}
+
+/* ===== 響應式工具類 ===== */
+
+/* 隱藏元素在特定螢幕尺寸 */
+@media (max-width: 575px) {
+  .hide-xs {
+    display: none !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .hide-sm {
+    display: none !important;
+  }
+}
+
+@media (max-width: 991px) {
+  .hide-md {
+    display: none !important;
+  }
+}
+
+@media (max-width: 1199px) {
+  .hide-lg {
+    display: none !important;
+  }
+}
+
+/* 只在特定螢幕尺寸顯示 */
+@media (min-width: 576px) {
+  .show-xs-only {
+    display: none !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .show-sm-only {
+    display: none !important;
+  }
+}
+
+@media (min-width: 992px) {
+  .show-md-only {
+    display: none !important;
+  }
+}
+
+/* 改善連線狀態在小螢幕的顯示 */
+@media (max-width: 767px) {
+  .connection-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    align-items: center;
+    font-size: 10px;
+  }
+
+  .connection-quality {
+    margin-top: 4px;
+  }
+
+  .latency-indicator {
+    font-size: 10px;
+  }
+
+  .signal-strength {
+    transform: scale(0.8);
+  }
+}
+
+/* ===== 除錯面板樣式 ===== */
+
+/* Essential status layout */
+.essential-status {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* Debug toggle button */
+.debug-toggle-container {
+  display: flex;
+  align-items: center;
+}
+
+.debug-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(4px);
+}
+
+.debug-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: var(--text-primary);
+}
+
+.debug-icon {
+  font-size: 12px;
+}
+
+.toggle-arrow {
+  font-size: 10px;
+  transition: transform 0.2s ease;
+}
+
+.debug-toggle-btn.expanded .toggle-arrow {
+  transform: rotate(180deg);
+}
+
+/* Debug panel */
+.debug-panel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--panel-header-bg);
+  border: 1px solid var(--panel-border);
+  border-top: none;
+  backdrop-filter: blur(10px);
+  z-index: 99;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.debug-panel.collapsed {
+  max-height: 0;
+  opacity: 0;
+  border-width: 0;
+  box-shadow: none;
+}
+
+.debug-panel.expanded {
+  max-height: 200px;
+  opacity: 1;
+}
+
+.debug-content {
+  padding: 16px 20px;
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.debug-section {
+  flex: 1;
+  min-width: 200px;
+}
+
+.debug-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.debug-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.debug-metrics .metric,
+.debug-metrics .session-age,
+.debug-metrics .connection-time,
+.debug-metrics .reconnect-count {
+  font-size: 10px;
+  color: var(--text-secondary);
+  opacity: 0.9;
+}
+
+.debug-metrics .connection-quality {
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.debug-metrics .latency-indicator {
+  font-size: 10px;
+}
+
+.debug-metrics .signal-strength {
+  transform: scale(0.7);
+}
+
+/* Debug panel responsive styles */
+@media (max-width: 991px) {
+  .debug-content {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .debug-section {
+    min-width: auto;
+  }
+
+  .debug-panel.expanded {
+    max-height: 300px;
+  }
+}
+
+@media (max-width: 767px) {
+  .debug-toggle-btn {
+    padding: 3px 6px;
+    font-size: 10px;
+  }
+
+  .debug-icon {
+    font-size: 11px;
+  }
+
+  .debug-content {
+    padding: 12px 16px;
+    gap: 12px;
+  }
+
+  .debug-section-title {
+    font-size: 10px;
+    margin-bottom: 6px;
+  }
+
+  .debug-metrics .metric,
+  .debug-metrics .session-age,
+  .debug-metrics .connection-time,
+  .debug-metrics .reconnect-count {
+    font-size: 9px;
+  }
+
+  .debug-panel.expanded {
+    max-height: 250px;
+  }
+}
+
+@media (max-width: 575px) {
+  .essential-status {
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .debug-toggle-container {
+    order: -1;
+  }
+
+  .debug-content {
+    padding: 8px 12px;
+  }
+
+  .debug-panel.expanded {
+    max-height: 200px;
+  }
+}
+
+/* ===== 專案詳情模態框樣式 ===== */
+
+.project-details-modal {
+  max-width: 600px;
+  width: 90%;
+}
+
+.project-details-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.project-details-icon {
+  font-size: 24px;
+}
+
+.project-details-title {
+  margin: 0;
+  font-size: 20px;
+  color: var(--text-primary);
+}
+
+.project-details-content {
+  display: grid;
+  gap: 16px;
+}
+
+.project-detail-section {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.project-detail-section h4 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.project-detail-section .section-icon {
+  font-size: 16px;
+}
+
+.project-detail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.project-detail-item:last-child {
+  border-bottom: none;
+}
+
+.project-detail-label {
+  font-weight: 500;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.project-detail-value {
+  color: var(--text-primary);
+  font-size: 12px;
+  font-family: monospace;
+  text-align: right;
+  max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-detail-value.clickable {
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.project-detail-value.clickable:hover {
+  color: var(--accent-color);
+}
+
+.project-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.project-action-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--text-secondary);
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.project-action-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--text-primary);
+}
+
+.project-action-btn.primary {
+  background: var(--accent-color);
+  border-color: var(--accent-color);
+  color: white;
+}
+
+.project-action-btn.primary:hover {
+  background: #005a9e;
+}
+
+/* 專案歷史樣式 */
+.project-history-list {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.project-history-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.project-history-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.project-history-item.current {
+  background: rgba(0, 122, 204, 0.1);
+  border: 1px solid var(--accent-color);
+}
+
+.project-history-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.project-history-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.project-history-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-history-path {
+  font-size: 10px;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-history-time {
+  font-size: 10px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
 }
 
 /* ===== 載入狀態 ===== */

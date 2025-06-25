@@ -190,6 +190,75 @@
         "upload": "Upload",
         "download": "Download"
     },
+    "debug": {
+        "togglePanel": "Toggle debug panel",
+        "debugInfo": "Debug Info",
+        "sessionDetails": "Session Details",
+        "connectionDetails": "Connection Details",
+        "websocketMetrics": "WebSocket Metrics"
+    },
+    "smartScroll": {
+        "newMessage": "New message available",
+        "scrollToTop": "Scroll to top"
+    },
+    "templateSelector": {
+        "title": "Select Auto-Submit Template",
+        "searchPlaceholder": "Search templates...",
+        "selectTemplate": "Please select a template",
+        "selected": "Selected: {name}",
+        "noTemplates": "No templates available",
+        "createFirst": "Please create templates in settings first",
+        "preview": "Preview",
+        "previewTitle": "Template Preview: {name}",
+        "length": "Length: {count} characters",
+        "created": "Created: {date}",
+        "autoSubmitBadge": "Auto Submit",
+        "cancel": "Cancel",
+        "confirm": "Confirm Selection",
+        "close": "Close"
+    },
+    "audioPermission": {
+        "dialogTitle": "Enable Audio Notifications",
+        "dialogDescription": "To provide a better user experience, we would like to play audio notifications when new messages arrive.",
+        "dialogOptions": "You can choose:",
+        "enableAudio": "Enable Audio",
+        "enableAudioDescription": "Play audio notifications",
+        "useFallback": "Use Other Notifications",
+        "useFallbackDescription": "Use visual and browser notifications",
+        "statusEnabled": "Audio Enabled",
+        "statusFallback": "Using Fallback Notifications",
+        "statusDisabled": "Audio Not Enabled",
+        "enableButton": "Enable Audio",
+        "newMessageNotification": "New Message Notification",
+        "autoplayBlocked": "Audio blocked, visual and browser notifications enabled",
+        "permissionGranted": "Audio permission granted",
+        "permissionDenied": "Audio permission denied, fallback notifications enabled"
+    },
+    "projectContext": {
+        "clickForDetails": "Click to view project details",
+        "showDetails": "Show project details",
+        "projectDetails": "Project Details",
+        "basicInfo": "Basic Information",
+        "projectName": "Project Name",
+        "projectType": "Project Type",
+        "projectPath": "Project Path",
+        "lastAccessed": "Last Accessed",
+        "projectHistory": "Project History",
+        "agentContext": "Agent Context",
+        "agentName": "Agent Name",
+        "noHistory": "No project history available",
+        "copyPath": "Copy Path",
+        "close": "Close",
+        "pathCopied": "Path copied!",
+        "projectTypes": {
+            "web": "Web Application",
+            "mobile": "Mobile Application",
+            "desktop": "Desktop Application",
+            "api": "API Service",
+            "data": "Data Project",
+            "general": "General Project"
+        }
+    },
     "telegram": {
         "title": "📱 Telegram Integration",
         "enable": "Enable Telegram Integration",

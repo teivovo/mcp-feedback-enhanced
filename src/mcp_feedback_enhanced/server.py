@@ -68,6 +68,9 @@ from .utils.mcp_telegram_bridge import (
     clear_telegram_feedback
 )
 
+# 導入規則引擎
+from .utils.rules_engine import MessageTypeRulesEngine
+
 # 導入配置管理器
 from .utils.config_manager import (
     initialize_config_manager,
@@ -160,6 +163,17 @@ else:
     fastmcp_settings["log_level"] = "INFO"
 
 mcp: Any = FastMCP(SERVER_NAME)
+
+# 初始化規則引擎
+_rules_engine = None
+
+def get_rules_engine() -> MessageTypeRulesEngine:
+    """獲取全域規則引擎實例"""
+    global _rules_engine
+    if _rules_engine is None:
+        _rules_engine = MessageTypeRulesEngine()
+        debug_log("🔧 規則引擎已初始化")
+    return _rules_engine
 
 
 # ===== 工具函數 =====
@@ -464,6 +478,9 @@ async def interactive_feedback(
         str, Field(description="AI 工作完成的摘要說明")
     ] = "我已完成了您請求的任務。",
     timeout: Annotated[int, Field(description="等待用戶回饋的超時時間（秒）")] = 600,
+    message_type: Annotated[
+        str, Field(description="訊息類型，用於配置規則和行為")
+    ] = "general",
 ) -> list:
     """
     收集用戶的互動回饋，支援文字和圖片
@@ -484,6 +501,9 @@ async def interactive_feedback(
         project_directory: 專案目錄路徑
         summary: AI 工作完成的摘要說明
         timeout: 等待用戶回饋的超時時間（秒），預設為 600 秒（10 分鐘）
+        message_type: 訊息類型，用於配置規則和行為（預設為 'general'）
+                     可選值: 'general', 'code_review', 'error_report', 'feature_request',
+                            'documentation', 'testing', 'deployment', 'security'
 
     Returns:
         List: 包含 TextContent 和 MCPImage 對象的列表
@@ -497,7 +517,8 @@ async def interactive_feedback(
         request_data={
             "project_directory": project_directory,
             "summary": summary,
-            "timeout": timeout
+            "timeout": timeout,
+            "message_type": message_type
         },
         session_id=session_id,
         project_directory=project_directory
@@ -538,7 +559,30 @@ async def interactive_feedback(
         # 使用 Web 模式
         debug_log("回饋模式: web")
 
-        result = await launch_web_feedback_ui(project_directory, summary, timeout)
+        # 應用規則引擎
+        base_config = {
+            "auto_submit": False,
+            "timeout": timeout,
+            "response_text": summary,
+            "message_type": message_type
+        }
+
+        try:
+            rules_engine = get_rules_engine()
+            applied_config = rules_engine.apply_rules(message_type, project_directory, base_config)
+            debug_log(f"🎯 規則引擎應用完成，配置: {applied_config}")
+
+            # 使用應用規則後的配置
+            final_timeout = applied_config.get("timeout", timeout)
+            final_summary = applied_config.get("response_text", summary)
+
+        except Exception as e:
+            debug_log(f"⚠️ 規則引擎應用失敗: {e}")
+            # 使用原始配置
+            final_timeout = timeout
+            final_summary = summary
+
+        result = await launch_web_feedback_ui(project_directory, final_summary, final_timeout, message_type)
 
         # 處理取消情況
         if not result:
@@ -627,7 +671,101 @@ async def interactive_feedback(
         return [TextContent(type="text", text=user_error_msg)]
 
 
-async def launch_web_feedback_ui(project_dir: str, summary: str, timeout: int) -> dict:
+@mcp.tool()
+async def manage_message_type_rules(
+    action: Annotated[str, Field(description="操作類型: 'list', 'add', 'update', 'delete', 'test'")] = "list",
+    rule_data: Annotated[str, Field(description="規則數據 (JSON 格式，用於 add/update 操作)")] = "",
+    rule_id: Annotated[str, Field(description="規則 ID (用於 update/delete 操作)")] = "",
+    test_message_type: Annotated[str, Field(description="測試訊息類型 (用於 test 操作)")] = "general",
+    test_project_path: Annotated[str, Field(description="測試專案路徑 (用於 test 操作)")] = ".",
+) -> list:
+    """
+    管理訊息類型規則
+
+    支援的操作：
+    - list: 列出所有規則
+    - add: 添加新規則
+    - update: 更新現有規則
+    - delete: 刪除規則
+    - test: 測試規則匹配
+
+    Args:
+        action: 操作類型
+        rule_data: 規則數據 (JSON 格式)
+        rule_id: 規則 ID
+        test_message_type: 測試用訊息類型
+        test_project_path: 測試用專案路徑
+
+    Returns:
+        操作結果
+    """
+    try:
+        rules_engine = get_rules_engine()
+
+        if action == "list":
+            # 列出所有規則
+            summary = rules_engine.get_rules_summary()
+            rules_data = rules_engine.storage.load_rules()
+
+            result_text = f"""📋 訊息類型規則摘要
+
+總規則數: {summary['total_rules']}
+啟用規則數: {summary['enabled_rules']}
+
+按訊息類型分組:
+"""
+            for msg_type, count in summary.get('by_message_type', {}).items():
+                result_text += f"  • {msg_type}: {count} 條規則\n"
+
+            result_text += "\n按規則類型分組:\n"
+            for rule_type, count in summary.get('by_rule_type', {}).items():
+                result_text += f"  • {rule_type}: {count} 條規則\n"
+
+            result_text += "\n詳細規則列表:\n"
+            for rule in rules_data.get('rules', []):
+                status = "✅" if rule.get('enabled', True) else "❌"
+                result_text += f"{status} {rule['id']}: {rule['name']} ({rule['message_type']} -> {rule['rule_type']})\n"
+
+            return [TextContent(type="text", text=result_text)]
+
+        elif action == "test":
+            # 測試規則匹配
+            test_results = rules_engine.test_rule_matching(test_message_type, test_project_path)
+
+            result_text = f"""🧪 規則匹配測試結果
+
+測試參數:
+  • 訊息類型: {test_message_type}
+  • 專案路徑: {test_project_path}
+
+匹配結果:
+  • 總規則數: {test_results['total_rules']}
+  • 匹配規則數: {len(test_results['matching_rules'])}
+  • 不匹配規則數: {len(test_results['non_matching_rules'])}
+
+匹配的規則:
+"""
+            for rule in test_results['matching_rules']:
+                result_text += f"  ✅ {rule['id']}: {rule['name']} (優先級: {rule['priority']})\n"
+
+            if test_results['non_matching_rules']:
+                result_text += "\n不匹配的規則:\n"
+                for rule in test_results['non_matching_rules']:
+                    reasons = ", ".join(rule.get('non_match_reasons', []))
+                    result_text += f"  ❌ {rule['id']}: {rule['name']} (原因: {reasons})\n"
+
+            return [TextContent(type="text", text=result_text)]
+
+        else:
+            return [TextContent(type="text", text=f"❌ 不支援的操作: {action}。支援的操作: list, test")]
+
+    except Exception as e:
+        error_text = f"❌ 規則管理操作失敗: {str(e)}"
+        debug_log(error_text)
+        return [TextContent(type="text", text=error_text)]
+
+
+async def launch_web_feedback_ui(project_dir: str, summary: str, timeout: int, message_type: str = "general") -> dict:
     """
     啟動 Web UI 收集回饋，支援自訂超時時間
 
@@ -635,18 +773,19 @@ async def launch_web_feedback_ui(project_dir: str, summary: str, timeout: int) -
         project_dir: 專案目錄路徑
         summary: AI 工作摘要
         timeout: 超時時間（秒）
+        message_type: 訊息類型，用於配置規則和行為
 
     Returns:
         dict: 收集到的回饋資料
     """
-    debug_log(f"啟動 Web UI 介面，超時時間: {timeout} 秒")
+    debug_log(f"啟動 Web UI 介面，超時時間: {timeout} 秒，訊息類型: {message_type}")
 
     try:
         # 使用新的 web 模組
         from .web import launch_web_feedback_ui as web_launch
 
-        # 傳遞 timeout 參數給 Web UI
-        return await web_launch(project_dir, summary, timeout)
+        # 傳遞參數給 Web UI
+        return await web_launch(project_dir, summary, timeout, message_type)
     except ImportError as e:
         # 使用統一錯誤處理
         error_id = ErrorHandler.log_error_with_context(

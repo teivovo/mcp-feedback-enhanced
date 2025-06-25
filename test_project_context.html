@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Context Display Test</title>
+    <link rel="stylesheet" href="src/mcp_feedback_enhanced/web/static/css/styles.css">
+    <link rel="stylesheet" href="src/mcp_feedback_enhanced/web/static/css/session-management.css">
+    <style>
+        :root {
+            --bg-primary: #1e1e1e;
+            --bg-secondary: #2d2d30;
+            --bg-tertiary: #3e3e42;
+            --text-primary: #cccccc;
+            --text-secondary: #9e9e9e;
+            --accent-color: #007acc;
+            --border-color: #464647;
+            --panel-header-bg: rgba(45, 45, 48, 0.95);
+            --panel-border: #464647;
+        }
+        
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+        
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .test-header {
+            background: var(--bg-secondary);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .test-controls {
+            background: rgba(0, 122, 204, 0.1);
+            border: 1px solid var(--accent-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .control-group {
+            margin-bottom: 15px;
+        }
+        
+        .btn {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 8px;
+            font-size: 14px;
+            transition: background 0.2s ease;
+        }
+        
+        .btn:hover {
+            background: #005a9e;
+        }
+        
+        .btn-secondary {
+            background: var(--text-secondary);
+        }
+        
+        .btn-secondary:hover {
+            background: #7e7e7e;
+        }
+        
+        .demo-header {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal-container {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+            max-height: 90vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .modal-overlay.show .modal-container {
+            transform: scale(1);
+        }
+        
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-title {
+            margin: 0;
+            font-size: 18px;
+            color: var(--text-primary);
+        }
+        
+        .modal-close-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+        
+        .modal-close-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+        
+        .modal-body {
+            padding: 20px;
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        .modal-footer {
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .feature-list {
+            background: rgba(76, 175, 80, 0.1);
+            border: 1px solid #4caf50;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .feature-list h3 {
+            color: #4caf50;
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-header">
+            <h1>📂 Project Context Display Enhancement Test</h1>
+            <p>This test demonstrates the enhanced project context display with detailed project information, type detection, and interactive features.</p>
+        </div>
+        
+        <div class="test-controls">
+            <h3>🎮 Test Controls</h3>
+            
+            <div class="control-group">
+                <strong>Project Types:</strong><br>
+                <button class="btn" onclick="setProjectType('web')">🌐 Web Project</button>
+                <button class="btn" onclick="setProjectType('mobile')">📱 Mobile Project</button>
+                <button class="btn" onclick="setProjectType('desktop')">🖥️ Desktop Project</button>
+                <button class="btn" onclick="setProjectType('api')">🔌 API Project</button>
+                <button class="btn" onclick="setProjectType('data')">📊 Data Project</button>
+                <button class="btn btn-secondary" onclick="setProjectType('general')">📂 General Project</button>
+            </div>
+            
+            <div class="control-group">
+                <strong>Project Names:</strong><br>
+                <button class="btn" onclick="setProjectName('My Awesome Web App')">Web App</button>
+                <button class="btn" onclick="setProjectName('Mobile Banking App')">Mobile App</button>
+                <button class="btn" onclick="setProjectName('Desktop Analytics Tool')">Desktop Tool</button>
+                <button class="btn" onclick="setProjectName('User Management API')">API Service</button>
+                <button class="btn" onclick="setProjectName('Data Processing Pipeline')">Data Pipeline</button>
+            </div>
+            
+            <div class="control-group">
+                <strong>Agent Context:</strong><br>
+                <button class="btn" onclick="setAgentContext('Claude Sonnet', true)">🤖 Show Agent Context</button>
+                <button class="btn btn-secondary" onclick="setAgentContext(null, false)">❌ Hide Agent Context</button>
+            </div>
+            
+            <div class="control-group">
+                <strong>Actions:</strong><br>
+                <button class="btn" onclick="showProjectDetails()">📋 Show Project Details</button>
+                <button class="btn" onclick="copyProjectPath()">📋 Copy Project Path</button>
+                <button class="btn btn-secondary" onclick="resetToDefaults()">🔄 Reset to Defaults</button>
+            </div>
+        </div>
+        
+        <!-- Demo Header -->
+        <div class="demo-header">
+            <div class="connection-monitor-bar">
+                <!-- 左側：應用標題和專案資訊 -->
+                <div class="app-info-section">
+                    <div class="app-title">
+                        <h1>MCP Feedback Enhanced</h1>
+                    </div>
+                    <div class="project-context-container">
+                        <div class="project-info-main">
+                            <div class="project-name-section">
+                                <span class="project-icon" id="projectIcon">📂</span>
+                                <span class="project-name" id="projectName" title="點擊查看專案詳情" onclick="showProjectDetails()">
+                                    <span id="projectNameDisplay">Test Project</span>
+                                </span>
+                                <button class="project-details-btn" id="projectDetailsBtn" title="顯示專案詳情" onclick="showProjectDetails()">
+                                    <span>ℹ️</span>
+                                </button>
+                            </div>
+                            <div class="project-path-section">
+                                <span class="project-path-label">專案目錄</span>:
+                                <span id="projectPathDisplay" class="project-path-display"
+                                      data-full-path="/Users/developer/projects/test-project"
+                                      title="點擊複製完整路徑"
+                                      onclick="copyProjectPath()">/Users/developer/projects/test-project</span>
+                            </div>
+                        </div>
+                        <div class="project-status-indicators">
+                            <div class="project-type-indicator" id="projectTypeIndicator">
+                                <span class="indicator-icon">🔧</span>
+                                <span class="indicator-text" id="projectTypeText">General</span>
+                            </div>
+                            <div class="agent-context-indicator" id="agentContextIndicator" style="display: none;">
+                                <span class="indicator-icon">🤖</span>
+                                <span class="indicator-text" id="agentContextText">Agent</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 中間：連線狀態資訊 -->
+                <div class="connection-status-group">
+                    <div class="connection-indicator connecting">
+                        <div class="status-icon pulse"></div>
+                        <span class="status-text">已連接</span>
+                    </div>
+                </div>
+
+                <!-- 右側：快速操作 -->
+                <div class="quick-actions">
+                    <button style="padding: 4px 8px; font-size: 11px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #ccc; border-radius: 4px;">設定</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="feature-list">
+            <h3>✨ Enhanced Project Context Features</h3>
+            <ul>
+                <li><strong>📂 Smart Project Detection:</strong> Automatically detects project type from path and name</li>
+                <li><strong>🎯 Visual Project Types:</strong> Color-coded indicators for Web, Mobile, Desktop, API, and Data projects</li>
+                <li><strong>📋 Detailed Project Information:</strong> Comprehensive project details modal with metadata</li>
+                <li><strong>🕒 Project History:</strong> Tracks and displays recently accessed projects</li>
+                <li><strong>🤖 Agent Context:</strong> Shows active agent information when available</li>
+                <li><strong>📱 Responsive Design:</strong> Adapts layout for mobile, tablet, and desktop</li>
+                <li><strong>📋 One-Click Copy:</strong> Easy project path copying with visual feedback</li>
+                <li><strong>🎨 Interactive Elements:</strong> Clickable project name and details button</li>
+                <li><strong>🌐 Internationalized:</strong> Multi-language support for all text</li>
+                <li><strong>💾 Persistent History:</strong> Remembers project history across sessions</li>
+            </ul>
+        </div>
+        
+        <div style="background: rgba(255, 152, 0, 0.1); border: 1px solid #ff9800; border-radius: 8px; padding: 20px; margin-top: 20px;">
+            <h3 style="color: #ff9800; margin-top: 0;">🧪 Test Instructions</h3>
+            <ol>
+                <li><strong>Project Types:</strong> Click different project type buttons to see visual changes</li>
+                <li><strong>Project Names:</strong> Test different project names to see how they display</li>
+                <li><strong>Agent Context:</strong> Toggle agent context to see the indicator appear/disappear</li>
+                <li><strong>Project Details:</strong> Click the info button or project name to see detailed modal</li>
+                <li><strong>Copy Functionality:</strong> Click the project path to test copy functionality</li>
+                <li><strong>Responsive Testing:</strong> Resize the window to see responsive behavior</li>
+                <li><strong>Visual Feedback:</strong> Notice color changes and hover effects</li>
+                <li><strong>History Simulation:</strong> Project details modal shows simulated history</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        // Mock project context data
+        let mockProjectData = {
+            name: 'Test Project',
+            path: '/Users/developer/projects/test-project',
+            type: 'general',
+            agent: null,
+            lastAccessed: new Date().toISOString(),
+            metadata: {}
+        };
+        
+        // Mock project history
+        let mockProjectHistory = [
+            {
+                name: 'Test Project',
+                path: '/Users/developer/projects/test-project',
+                type: 'general',
+                lastAccessed: new Date().toISOString()
+            },
+            {
+                name: 'E-commerce Website',
+                path: '/Users/developer/projects/ecommerce-web',
+                type: 'web',
+                lastAccessed: new Date(Date.now() - 3600000).toISOString()
+            },
+            {
+                name: 'Mobile Banking App',
+                path: '/Users/developer/projects/banking-mobile',
+                type: 'mobile',
+                lastAccessed: new Date(Date.now() - 7200000).toISOString()
+            },
+            {
+                name: 'Analytics Dashboard',
+                path: '/Users/developer/projects/analytics-desktop',
+                type: 'desktop',
+                lastAccessed: new Date(Date.now() - 86400000).toISOString()
+            }
+        ];
+        
+        // Set project type
+        function setProjectType(type) {
+            mockProjectData.type = type;
+            updateProjectDisplay();
+            console.log(`📂 Project type set to: ${type}`);
+        }
+        
+        // Set project name
+        function setProjectName(name) {
+            mockProjectData.name = name;
+            updateProjectDisplay();
+            console.log(`📝 Project name set to: ${name}`);
+        }
+        
+        // Set agent context
+        function setAgentContext(agentName, show) {
+            if (show && agentName) {
+                mockProjectData.agent = { name: agentName };
+            } else {
+                mockProjectData.agent = null;
+            }
+            updateAgentContext();
+            console.log(`🤖 Agent context: ${show ? agentName : 'hidden'}`);
+        }
+        
+        // Update project display
+        function updateProjectDisplay() {
+            const projectNameDisplay = document.getElementById('projectNameDisplay');
+            const projectIcon = document.getElementById('projectIcon');
+            const projectTypeIndicator = document.getElementById('projectTypeIndicator');
+            const projectTypeText = document.getElementById('projectTypeText');
+
+            if (projectNameDisplay) {
+                projectNameDisplay.textContent = mockProjectData.name;
+            }
+
+            if (projectIcon) {
+                projectIcon.textContent = getProjectIcon(mockProjectData.type);
+            }
+
+            if (projectTypeIndicator && projectTypeText) {
+                projectTypeIndicator.className = `project-type-indicator ${mockProjectData.type}-project`;
+                projectTypeText.textContent = getProjectTypeLabel(mockProjectData.type);
+            }
+        }
+        
+        // Update agent context
+        function updateAgentContext() {
+            const agentContextIndicator = document.getElementById('agentContextIndicator');
+            const agentContextText = document.getElementById('agentContextText');
+
+            if (!agentContextIndicator || !agentContextText) return;
+
+            if (mockProjectData.agent && mockProjectData.agent.name) {
+                agentContextIndicator.style.display = 'flex';
+                agentContextIndicator.className = 'agent-context-indicator active';
+                agentContextText.textContent = mockProjectData.agent.name;
+            } else {
+                agentContextIndicator.style.display = 'none';
+            }
+        }
+        
+        // Get project icon
+        function getProjectIcon(type) {
+            const icons = {
+                'web': '🌐',
+                'mobile': '📱',
+                'desktop': '🖥️',
+                'api': '🔌',
+                'data': '📊',
+                'general': '📂'
+            };
+            return icons[type] || icons.general;
+        }
+        
+        // Get project type label
+        function getProjectTypeLabel(type) {
+            const labels = {
+                'web': 'Web',
+                'mobile': 'Mobile',
+                'desktop': 'Desktop',
+                'api': 'API',
+                'data': 'Data',
+                'general': 'General'
+            };
+            return labels[type] || labels.general;
+        }
+        
+        // Show project details
+        function showProjectDetails() {
+            const modal = createProjectDetailsModal(mockProjectData);
+            document.body.appendChild(modal);
+            
+            setTimeout(() => {
+                modal.classList.add('show');
+            }, 10);
+        }
+        
+        // Create project details modal
+        function createProjectDetailsModal(projectData) {
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-container project-details-modal">
+                    <div class="modal-header">
+                        <div class="project-details-header">
+                            <span class="project-details-icon">${getProjectIcon(projectData.type)}</span>
+                            <h3 class="project-details-title">${escapeHtml(projectData.name)}</h3>
+                        </div>
+                        <button type="button" class="modal-close-btn" aria-label="關閉">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="project-details-content">
+                            ${renderProjectDetailsContent(projectData)}
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <div class="project-actions">
+                            <button type="button" class="project-action-btn" onclick="this.closest('.modal-overlay').remove()">關閉</button>
+                            <button type="button" class="project-action-btn primary" onclick="copyProjectPath(); this.textContent='已複製!'; setTimeout(() => this.textContent='複製路徑', 1000)">複製路徑</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Setup events
+            const closeBtn = modal.querySelector('.modal-close-btn');
+            closeBtn.addEventListener('click', () => {
+                closeModal(modal);
+            });
+            
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeModal(modal);
+                }
+            });
+
+            return modal;
+        }
+        
+        // Render project details content
+        function renderProjectDetailsContent(projectData) {
+            return `
+                <div class="project-detail-section">
+                    <h4><span class="section-icon">📋</span>基本信息</h4>
+                    <div class="project-detail-item">
+                        <span class="project-detail-label">專案名稱:</span>
+                        <span class="project-detail-value">${escapeHtml(projectData.name)}</span>
+                    </div>
+                    <div class="project-detail-item">
+                        <span class="project-detail-label">專案類型:</span>
+                        <span class="project-detail-value">${getProjectTypeLabel(projectData.type)}</span>
+                    </div>
+                    <div class="project-detail-item">
+                        <span class="project-detail-label">專案路徑:</span>
+                        <span class="project-detail-value clickable" onclick="copyProjectPath()" title="點擊複製">${escapeHtml(projectData.path)}</span>
+                    </div>
+                    <div class="project-detail-item">
+                        <span class="project-detail-label">最後訪問:</span>
+                        <span class="project-detail-value">${formatDate(projectData.lastAccessed)}</span>
+                    </div>
+                </div>
+                
+                <div class="project-detail-section">
+                    <h4><span class="section-icon">🕒</span>專案歷史</h4>
+                    <div class="project-history-list">
+                        ${renderProjectHistory(mockProjectHistory, projectData.path)}
+                    </div>
+                </div>
+                
+                ${projectData.agent ? `
+                <div class="project-detail-section">
+                    <h4><span class="section-icon">🤖</span>Agent 上下文</h4>
+                    <div class="project-detail-item">
+                        <span class="project-detail-label">Agent 名稱:</span>
+                        <span class="project-detail-value">${escapeHtml(projectData.agent.name)}</span>
+                    </div>
+                </div>
+                ` : ''}
+            `;
+        }
+        
+        // Render project history
+        function renderProjectHistory(history, currentPath) {
+            return history.map(project => {
+                const isCurrent = project.path === currentPath;
+                return `
+                    <div class="project-history-item ${isCurrent ? 'current' : ''}">
+                        <span class="project-history-icon">${getProjectIcon(project.type)}</span>
+                        <div class="project-history-info">
+                            <div class="project-history-name">${escapeHtml(project.name)}</div>
+                            <div class="project-history-path">${escapeHtml(project.path)}</div>
+                        </div>
+                        <div class="project-history-time">${formatRelativeTime(project.lastAccessed)}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // Copy project path
+        function copyProjectPath() {
+            const projectPathDisplay = document.getElementById('projectPathDisplay');
+            if (!projectPathDisplay) return;
+
+            const fullPath = projectPathDisplay.getAttribute('data-full-path') || projectPathDisplay.textContent;
+            
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(fullPath).then(() => {
+                    console.log('📋 專案路徑已複製到剪貼板');
+                    showCopyFeedback(projectPathDisplay);
+                }).catch(err => {
+                    console.error('❌ 複製失敗:', err);
+                });
+            } else {
+                // Fallback
+                const textArea = document.createElement('textarea');
+                textArea.value = fullPath;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                console.log('📋 專案路徑已複製到剪貼板（備用方法）');
+                showCopyFeedback(projectPathDisplay);
+            }
+        }
+        
+        // Show copy feedback
+        function showCopyFeedback(element) {
+            const originalText = element.textContent;
+            element.textContent = '已複製!';
+            element.style.color = 'var(--accent-color)';
+            
+            setTimeout(() => {
+                element.textContent = originalText;
+                element.style.color = '';
+            }, 1000);
+        }
+        
+        // Reset to defaults
+        function resetToDefaults() {
+            mockProjectData = {
+                name: 'Test Project',
+                path: '/Users/developer/projects/test-project',
+                type: 'general',
+                agent: null,
+                lastAccessed: new Date().toISOString(),
+                metadata: {}
+            };
+            updateProjectDisplay();
+            updateAgentContext();
+            console.log('🔄 Reset to defaults');
+        }
+        
+        // Close modal
+        function closeModal(modal) {
+            modal.classList.remove('show');
+            setTimeout(() => {
+                if (modal.parentNode) {
+                    modal.parentNode.removeChild(modal);
+                }
+            }, 300);
+        }
+        
+        // Utility functions
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function formatDate(dateString) {
+            if (!dateString) return '未知';
+            try {
+                return new Date(dateString).toLocaleString('zh-TW');
+            } catch (e) {
+                return '未知';
+            }
+        }
+        
+        function formatRelativeTime(dateString) {
+            if (!dateString) return '未知';
+            try {
+                const date = new Date(dateString);
+                const now = new Date();
+                const diff = now - date;
+                const minutes = Math.floor(diff / 60000);
+                const hours = Math.floor(minutes / 60);
+                const days = Math.floor(hours / 24);
+
+                if (days > 0) return `${days}天前`;
+                if (hours > 0) return `${hours}小時前`;
+                if (minutes > 0) return `${minutes}分鐘前`;
+                return '剛剛';
+            } catch (e) {
+                return '未知';
+            }
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            updateProjectDisplay();
+            updateAgentContext();
+            console.log('✅ Project context display test initialized');
+        });
+    </script>
+</body>
+</html>

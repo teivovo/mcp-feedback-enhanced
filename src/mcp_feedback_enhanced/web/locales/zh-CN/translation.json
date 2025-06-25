@@ -190,6 +190,75 @@
         "upload": "上传",
         "download": "下载"
     },
+    "debug": {
+        "togglePanel": "切换调试面板",
+        "debugInfo": "调试信息",
+        "sessionDetails": "会话详细",
+        "connectionDetails": "连接详细",
+        "websocketMetrics": "WebSocket 指标"
+    },
+    "smartScroll": {
+        "newMessage": "有新消息",
+        "scrollToTop": "滚动到顶部"
+    },
+    "templateSelector": {
+        "title": "选择自动提交模板",
+        "searchPlaceholder": "搜索模板...",
+        "selectTemplate": "请选择一个模板",
+        "selected": "已选择: {name}",
+        "noTemplates": "尚无可用模板",
+        "createFirst": "请先在设置中创建模板",
+        "preview": "预览",
+        "previewTitle": "模板预览: {name}",
+        "length": "长度: {count} 字符",
+        "created": "创建: {date}",
+        "autoSubmitBadge": "自动提交",
+        "cancel": "取消",
+        "confirm": "确认选择",
+        "close": "关闭"
+    },
+    "audioPermission": {
+        "dialogTitle": "启用音效通知",
+        "dialogDescription": "为了提供更好的使用体验，我们希望在有新消息时播放音效通知。",
+        "dialogOptions": "您可以选择：",
+        "enableAudio": "启用音效",
+        "enableAudioDescription": "播放音效通知",
+        "useFallback": "使用其他通知",
+        "useFallbackDescription": "使用视觉通知和浏览器通知",
+        "statusEnabled": "音效已启用",
+        "statusFallback": "使用备用通知",
+        "statusDisabled": "音效未启用",
+        "enableButton": "启用音效",
+        "newMessageNotification": "新消息通知",
+        "autoplayBlocked": "音效被阻止，已启用视觉和浏览器通知",
+        "permissionGranted": "音效权限已授予",
+        "permissionDenied": "音效权限被拒绝，已启用备用通知"
+    },
+    "projectContext": {
+        "clickForDetails": "点击查看项目详情",
+        "showDetails": "显示项目详情",
+        "projectDetails": "项目详情",
+        "basicInfo": "基本信息",
+        "projectName": "项目名称",
+        "projectType": "项目类型",
+        "projectPath": "项目路径",
+        "lastAccessed": "最后访问",
+        "projectHistory": "项目历史",
+        "agentContext": "Agent 上下文",
+        "agentName": "Agent 名称",
+        "noHistory": "尚无项目历史",
+        "copyPath": "复制路径",
+        "close": "关闭",
+        "pathCopied": "路径已复制！",
+        "projectTypes": {
+            "web": "Web 应用",
+            "mobile": "移动应用",
+            "desktop": "桌面应用",
+            "api": "API 服务",
+            "data": "数据项目",
+            "general": "通用项目"
+        }
+    },
     "telegram": {
         "title": "📱 Telegram 整合",
         "enable": "启用 Telegram 整合",

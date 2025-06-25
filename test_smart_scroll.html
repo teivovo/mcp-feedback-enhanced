@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Auto-Scroll Test</title>
+    <link rel="stylesheet" href="src/mcp_feedback_enhanced/web/static/css/styles.css">
+    <style>
+        :root {
+            --bg-primary: #1e1e1e;
+            --bg-secondary: #2d2d30;
+            --text-primary: #cccccc;
+            --text-secondary: #9e9e9e;
+            --accent-color: #007acc;
+            --border-color: #464647;
+        }
+        
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+        
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .test-header {
+            background: var(--bg-secondary);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .test-controls {
+            background: rgba(0, 122, 204, 0.1);
+            border: 1px solid var(--accent-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .control-group {
+            margin-bottom: 15px;
+        }
+        
+        .control-group:last-child {
+            margin-bottom: 0;
+        }
+        
+        .btn {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 5px;
+            font-size: 14px;
+            transition: background 0.2s ease;
+        }
+        
+        .btn:hover {
+            background: #005a9e;
+        }
+        
+        .btn-secondary {
+            background: var(--text-secondary);
+        }
+        
+        .btn-secondary:hover {
+            background: #7e7e7e;
+        }
+        
+        .content-area {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 200vh;
+            margin-bottom: 20px;
+        }
+        
+        .message {
+            background: rgba(0, 122, 204, 0.1);
+            border-left: 4px solid var(--accent-color);
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 0 4px 4px 0;
+        }
+        
+        .message-time {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+        }
+        
+        .scroll-position {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-family: monospace;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-reading {
+            background: #ff9800;
+        }
+        
+        .status-top {
+            background: #4caf50;
+        }
+        
+        .status-scrolling {
+            background: #2196f3;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-header">
+            <h1>🚀 Smart Auto-Scroll Test</h1>
+            <p>This test demonstrates the intelligent auto-scroll functionality that detects user reading behavior and provides appropriate feedback.</p>
+        </div>
+        
+        <div class="test-controls">
+            <h3>📋 Test Controls</h3>
+            
+            <div class="control-group">
+                <strong>Simulate New Messages:</strong><br>
+                <button class="btn" onclick="simulateNewMessage()">📬 Add New Message</button>
+                <button class="btn" onclick="simulateMultipleMessages()">📬📬 Add 3 Messages</button>
+                <button class="btn btn-secondary" onclick="clearMessages()">🗑️ Clear Messages</button>
+            </div>
+            
+            <div class="control-group">
+                <strong>Scroll Actions:</strong><br>
+                <button class="btn" onclick="scrollToTop()">⬆️ Scroll to Top</button>
+                <button class="btn" onclick="scrollToMiddle()">⬇️ Scroll to Middle</button>
+                <button class="btn" onclick="scrollToBottom()">⬇️ Scroll to Bottom</button>
+            </div>
+            
+            <div class="control-group">
+                <strong>Smart Scroll Settings:</strong><br>
+                <button class="btn" onclick="toggleSmartScroll()" id="toggleBtn">🔄 Toggle Smart Scroll</button>
+                <span id="smartScrollStatus">Enabled</span>
+            </div>
+        </div>
+        
+        <div class="content-area" id="contentArea">
+            <h3>📝 Content Area</h3>
+            <p>This area simulates the main content where new messages would appear. Scroll down to test the smart scroll behavior.</p>
+            
+            <div class="message">
+                <div class="message-time">Initial message - 12:00:00</div>
+                <div>Welcome to the Smart Auto-Scroll test! This is the initial message in the content area.</div>
+            </div>
+            
+            <div style="height: 100vh; display: flex; align-items: center; justify-content: center; color: var(--text-secondary);">
+                <div style="text-align: center;">
+                    <h3>📖 Reading Area</h3>
+                    <p>Scroll down here to simulate reading behavior.<br>
+                    When you're in this area and new messages arrive,<br>
+                    the system should show a notification instead of auto-scrolling.</p>
+                </div>
+            </div>
+            
+            <div style="height: 100vh; display: flex; align-items: center; justify-content: center; color: var(--text-secondary);">
+                <div style="text-align: center;">
+                    <h3>📚 More Content</h3>
+                    <p>This represents additional content that users might be reading.<br>
+                    The smart scroll system should detect when users are actively<br>
+                    engaged with content and avoid interrupting them.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div style="background: rgba(76, 175, 80, 0.1); border: 1px solid #4caf50; border-radius: 8px; padding: 20px;">
+            <h3>✅ Expected Behavior:</h3>
+            <ul>
+                <li><strong>At Top:</strong> New messages should auto-scroll to top</li>
+                <li><strong>While Reading:</strong> New message indicator should appear instead of auto-scrolling</li>
+                <li><strong>Indicator Click:</strong> Should scroll to top and hide indicator</li>
+                <li><strong>Manual Scroll to Top:</strong> Should hide indicator automatically</li>
+                <li><strong>Smooth Animation:</strong> All scrolling should be smooth</li>
+                <li><strong>State Persistence:</strong> Smart scroll preference should be saved</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="scroll-position" id="scrollPosition">
+        <div>Scroll: <span id="scrollY">0</span>px</div>
+        <div>Status: <span class="status-indicator" id="statusIndicator"></span><span id="scrollStatus">At Top</span></div>
+        <div>Smart Scroll: <span id="smartScrollEnabled">Enabled</span></div>
+    </div>
+
+    <script>
+        // Mock smart scroll functionality for testing
+        let smartScrollEnabled = true;
+        let messageCount = 1;
+        let recentScrollActivity = false;
+        let scrollActivityTimeout = null;
+        
+        // Create new message indicator
+        function createNewMessageIndicator() {
+            if (document.getElementById('newMessageIndicator')) return;
+            
+            const indicator = document.createElement('div');
+            indicator.id = 'newMessageIndicator';
+            indicator.className = 'new-message-indicator hidden';
+            indicator.innerHTML = `
+                <div class="indicator-content">
+                    <span class="indicator-icon">📬</span>
+                    <span class="indicator-text">有新訊息</span>
+                    <button class="scroll-to-top-btn" title="滾動到頂部">
+                        <span>↑</span>
+                    </button>
+                </div>
+            `;
+            
+            indicator.querySelector('.scroll-to-top-btn').addEventListener('click', () => {
+                scrollToTop();
+                hideNewMessageIndicator();
+            });
+            
+            document.body.appendChild(indicator);
+        }
+        
+        function showNewMessageIndicator() {
+            const indicator = document.getElementById('newMessageIndicator');
+            if (indicator) {
+                indicator.classList.remove('hidden');
+                indicator.classList.add('visible');
+            }
+        }
+        
+        function hideNewMessageIndicator() {
+            const indicator = document.getElementById('newMessageIndicator');
+            if (indicator) {
+                indicator.classList.remove('visible');
+                indicator.classList.add('hidden');
+            }
+        }
+        
+        function isNearTop() {
+            return window.scrollY < 100;
+        }
+        
+        function detectUserReading() {
+            return window.scrollY > 100 && !recentScrollActivity;
+        }
+        
+        function handleNewMessage() {
+            if (!smartScrollEnabled) return;
+            
+            const isUserReading = detectUserReading();
+            
+            if (!isUserReading && isNearTop()) {
+                // Auto-scroll to top
+                scrollToTop();
+            } else if (isUserReading) {
+                // Show indicator
+                showNewMessageIndicator();
+            }
+        }
+        
+        function simulateNewMessage() {
+            messageCount++;
+            const time = new Date().toLocaleTimeString();
+            const message = document.createElement('div');
+            message.className = 'message';
+            message.innerHTML = `
+                <div class="message-time">Message ${messageCount} - ${time}</div>
+                <div>This is a new message that was just received. Testing smart scroll behavior...</div>
+            `;
+            
+            const contentArea = document.getElementById('contentArea');
+            contentArea.insertBefore(message, contentArea.children[1]);
+            
+            handleNewMessage();
+        }
+        
+        function simulateMultipleMessages() {
+            for (let i = 0; i < 3; i++) {
+                setTimeout(() => simulateNewMessage(), i * 500);
+            }
+        }
+        
+        function clearMessages() {
+            const contentArea = document.getElementById('contentArea');
+            const messages = contentArea.querySelectorAll('.message');
+            messages.forEach((msg, index) => {
+                if (index > 0) msg.remove(); // Keep first message
+            });
+            messageCount = 1;
+            hideNewMessageIndicator();
+        }
+        
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        function scrollToMiddle() {
+            window.scrollTo({ top: window.innerHeight, behavior: 'smooth' });
+        }
+        
+        function scrollToBottom() {
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }
+        
+        function toggleSmartScroll() {
+            smartScrollEnabled = !smartScrollEnabled;
+            document.getElementById('smartScrollStatus').textContent = smartScrollEnabled ? 'Enabled' : 'Disabled';
+            document.getElementById('smartScrollEnabled').textContent = smartScrollEnabled ? 'Enabled' : 'Disabled';
+            document.getElementById('toggleBtn').textContent = smartScrollEnabled ? '🔄 Disable Smart Scroll' : '🔄 Enable Smart Scroll';
+        }
+        
+        function updateScrollStatus() {
+            const scrollY = window.scrollY;
+            const indicator = document.getElementById('statusIndicator');
+            const status = document.getElementById('scrollStatus');
+            
+            document.getElementById('scrollY').textContent = Math.round(scrollY);
+            
+            if (scrollY < 100) {
+                indicator.className = 'status-indicator status-top';
+                status.textContent = 'At Top';
+                hideNewMessageIndicator();
+            } else if (recentScrollActivity) {
+                indicator.className = 'status-indicator status-scrolling';
+                status.textContent = 'Scrolling';
+            } else {
+                indicator.className = 'status-indicator status-reading';
+                status.textContent = 'Reading';
+            }
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            createNewMessageIndicator();
+            
+            // Scroll event listeners
+            window.addEventListener('scroll', function() {
+                recentScrollActivity = true;
+                
+                if (scrollActivityTimeout) {
+                    clearTimeout(scrollActivityTimeout);
+                }
+                
+                scrollActivityTimeout = setTimeout(() => {
+                    recentScrollActivity = false;
+                    updateScrollStatus();
+                }, 2000);
+                
+                updateScrollStatus();
+            });
+            
+            updateScrollStatus();
+            console.log('✅ Smart scroll test initialized');
+        });
+    </script>
+</body>
+</html>

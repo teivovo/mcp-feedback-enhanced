@@ -311,7 +311,7 @@ class WebUIManager:
         else:
             raise RuntimeError(f"Templates directory not found: {web_templates_path}")
 
-    def create_session(self, project_directory: str, summary: str) -> str:
+    def create_session(self, project_directory: str, summary: str, message_type: str = "general") -> str:
         """創建新的回饋會話 - 重構為單一活躍會話模式，保留標籤頁狀態"""
         # 保存舊會話的 WebSocket 連接以便發送更新通知
         old_websocket = None
@@ -330,7 +330,7 @@ class WebUIManager:
             self.current_session._cleanup_sync()
 
         session_id = str(uuid.uuid4())
-        session = WebFeedbackSession(session_id, project_directory, summary)
+        session = WebFeedbackSession(session_id, project_directory, summary, message_type)
 
         # 將全局標籤頁狀態繼承到新會話
         session.active_tabs = self.global_active_tabs.copy()
@@ -1072,7 +1072,7 @@ def get_web_ui_manager() -> WebUIManager:
 
 
 async def launch_web_feedback_ui(
-    project_directory: str, summary: str, timeout: int = 600
+    project_directory: str, summary: str, timeout: int = 600, message_type: str = "general"
 ) -> dict:
     """
     啟動 Web 回饋介面並等待用戶回饋 - 重構為使用根路徑
@@ -1081,6 +1081,7 @@ async def launch_web_feedback_ui(
         project_directory: 專案目錄路徑
         summary: AI 工作摘要
         timeout: 超時時間（秒）
+        message_type: 訊息類型，用於配置規則和行為
 
     Returns:
         dict: 回饋結果，包含 logs、interactive_feedback 和 images
@@ -1088,7 +1089,7 @@ async def launch_web_feedback_ui(
     manager = get_web_ui_manager()
 
     # 創建或更新當前活躍會話
-    manager.create_session(project_directory, summary)
+    manager.create_session(project_directory, summary, message_type)
     session = manager.get_current_session()
 
     if not session:

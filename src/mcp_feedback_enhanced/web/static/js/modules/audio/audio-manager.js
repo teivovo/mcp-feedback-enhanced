@@ -65,11 +65,23 @@
         this.autoplayBlocked = false;
         this.interactionListenersAdded = false;
 
+        // 增強的權限管理
+        this.audioPermissionRequested = false;
+        this.audioPermissionGranted = false;
+        this.permissionDialogShown = false;
+        this.fallbackNotificationsEnabled = false;
+
+        // 通知方法
+        this.notificationPermission = null;
+        this.titleBarNotificationActive = false;
+        this.originalTitle = document.title;
+
         // 回調函數
         this.onSettingsChange = options.onSettingsChange || null;
 
         // 啟動音效播放標記
         this.startupNotificationPlayed = false;
+        this.autoplayNotificationShown = false;
 
         console.log('🔊 AudioManager 初始化完成');
     }
@@ -80,7 +92,40 @@
     AudioManager.prototype.initialize = function() {
         this.loadAudioSettings();
         this.setupUserInteractionDetection();
+        this.initializePermissions();
+        this.createAudioPermissionIndicator();
         console.log('✅ AudioManager 初始化完成');
+    };
+
+    /**
+     * 初始化權限系統
+     */
+    AudioManager.prototype.initializePermissions = function() {
+        // 檢查瀏覽器通知權限
+        if ('Notification' in window) {
+            this.notificationPermission = Notification.permission;
+        }
+
+        // 檢查是否已有音效權限
+        this.checkAudioPermissionStatus();
+
+        console.log('🔐 權限系統初始化完成');
+    };
+
+    /**
+     * 檢查音效權限狀態
+     */
+    AudioManager.prototype.checkAudioPermissionStatus = function() {
+        // 從 localStorage 讀取權限狀態
+        this.audioPermissionGranted = localStorage.getItem('audioPermissionGranted') === 'true';
+        this.audioPermissionRequested = localStorage.getItem('audioPermissionRequested') === 'true';
+
+        if (this.audioPermissionGranted) {
+            console.log('🔊 音效權限已授予');
+        } else if (this.audioPermissionRequested) {
+            console.log('🔇 音效權限已請求但未授予，啟用備用通知');
+            this.enableFallbackNotifications();
+        }
     };
 
     /**
@@ -190,9 +235,28 @@
      * 智能音效播放（處理自動播放限制）
      */
     AudioManager.prototype.playAudioSmart = function(audioData) {
+        // 檢查音效是否啟用
+        if (!this.currentAudioSettings.enabled) {
+            console.log('🔇 音效通知已停用');
+            return;
+        }
+
+        // 如果沒有音效權限，顯示權限請求或使用備用通知
+        if (!this.audioPermissionGranted && !this.audioPermissionRequested) {
+            this.requestAudioPermission();
+            return;
+        }
+
+        // 如果權限被拒絕，使用備用通知
+        if (this.audioPermissionRequested && !this.audioPermissionGranted) {
+            this.triggerFallbackNotification(audioData);
+            return;
+        }
+
         // 如果已知自動播放被阻止，直接加入待播放隊列
         if (this.autoplayBlocked && !this.userHasInteracted) {
             this.addToPendingNotifications(audioData);
+            this.triggerFallbackNotification(audioData);
             return;
         }
 
@@ -201,13 +265,18 @@
             .then(() => {
                 // 播放成功，清空待播放隊列
                 this.processPendingNotifications();
+                this.updateAudioPermissionStatus(true);
             })
             .catch((error) => {
                 if (error.name === 'NotAllowedError') {
                     // 自動播放被阻止
                     this.autoplayBlocked = true;
                     this.addToPendingNotifications(audioData);
-                    this.showAutoplayBlockedNotification();
+                    this.showEnhancedAutoplayBlockedNotification();
+                    this.triggerFallbackNotification(audioData);
+                } else {
+                    console.error('❌ 音效播放失敗:', error);
+                    this.triggerFallbackNotification(audioData);
                 }
             });
     };
@@ -579,21 +648,250 @@
     };
 
     /**
-     * 顯示自動播放被阻止的通知
+     * 請求音效權限
      */
-    AudioManager.prototype.showAutoplayBlockedNotification = function() {
+    AudioManager.prototype.requestAudioPermission = function() {
+        if (this.permissionDialogShown) return;
+
+        this.showPermissionDialog();
+    };
+
+    /**
+     * 顯示權限請求對話框
+     */
+    AudioManager.prototype.showPermissionDialog = function() {
+        if (this.permissionDialogShown) return;
+        this.permissionDialogShown = true;
+
+        const dialog = document.createElement('div');
+        dialog.className = 'audio-permission-dialog-overlay';
+        dialog.innerHTML = `
+            <div class="audio-permission-dialog">
+                <div class="dialog-header">
+                    <h3>🔊 啟用音效通知</h3>
+                </div>
+                <div class="dialog-body">
+                    <p>為了提供更好的使用體驗，我們希望在有新訊息時播放音效通知。</p>
+                    <p>您可以選擇：</p>
+                    <ul>
+                        <li><strong>啟用音效</strong> - 播放音效通知</li>
+                        <li><strong>使用其他通知</strong> - 使用視覺通知和瀏覽器通知</li>
+                    </ul>
+                </div>
+                <div class="dialog-actions">
+                    <button class="btn btn-secondary" id="audioPermissionDeny">使用其他通知</button>
+                    <button class="btn btn-primary" id="audioPermissionAllow">啟用音效</button>
+                </div>
+            </div>
+        `;
+
+        // 事件處理
+        const allowBtn = dialog.querySelector('#audioPermissionAllow');
+        const denyBtn = dialog.querySelector('#audioPermissionDeny');
+
+        allowBtn.addEventListener('click', () => {
+            this.handleAudioPermissionResponse(true);
+            dialog.remove();
+        });
+
+        denyBtn.addEventListener('click', () => {
+            this.handleAudioPermissionResponse(false);
+            dialog.remove();
+        });
+
+        // 點擊背景關閉
+        dialog.addEventListener('click', (e) => {
+            if (e.target === dialog) {
+                this.handleAudioPermissionResponse(false);
+                dialog.remove();
+            }
+        });
+
+        document.body.appendChild(dialog);
+        setTimeout(() => dialog.classList.add('show'), 10);
+    };
+
+    /**
+     * 處理音效權限回應
+     */
+    AudioManager.prototype.handleAudioPermissionResponse = function(granted) {
+        this.audioPermissionRequested = true;
+        this.audioPermissionGranted = granted;
+
+        // 保存到 localStorage
+        localStorage.setItem('audioPermissionRequested', 'true');
+        localStorage.setItem('audioPermissionGranted', granted.toString());
+
+        if (granted) {
+            console.log('✅ 用戶授予音效權限');
+            this.enableAudioWithUserGesture();
+        } else {
+            console.log('❌ 用戶拒絕音效權限，啟用備用通知');
+            this.enableFallbackNotifications();
+        }
+
+        this.updateAudioPermissionIndicator();
+    };
+
+    /**
+     * 通過用戶手勢啟用音效
+     */
+    AudioManager.prototype.enableAudioWithUserGesture = function() {
+        // 播放一個靜音音效來解鎖音效播放
+        const silentAudio = new Audio();
+        silentAudio.volume = 0;
+        silentAudio.play().then(() => {
+            console.log('🔊 音效播放已通過用戶手勢解鎖');
+            this.userHasInteracted = true;
+            this.processPendingNotifications();
+        }).catch(error => {
+            console.warn('⚠️ 音效解鎖失敗:', error);
+            this.enableFallbackNotifications();
+        });
+    };
+
+    /**
+     * 啟用備用通知方法
+     */
+    AudioManager.prototype.enableFallbackNotifications = function() {
+        this.fallbackNotificationsEnabled = true;
+
+        // 請求瀏覽器通知權限
+        this.requestBrowserNotificationPermission();
+
+        console.log('🔔 備用通知方法已啟用');
+    };
+
+    /**
+     * 請求瀏覽器通知權限
+     */
+    AudioManager.prototype.requestBrowserNotificationPermission = function() {
+        if (!('Notification' in window)) {
+            console.warn('⚠️ 此瀏覽器不支援通知');
+            return;
+        }
+
+        if (Notification.permission === 'default') {
+            Notification.requestPermission().then(permission => {
+                this.notificationPermission = permission;
+                console.log('🔔 瀏覽器通知權限:', permission);
+            });
+        }
+    };
+
+    /**
+     * 觸發備用通知
+     */
+    AudioManager.prototype.triggerFallbackNotification = function(audioData) {
+        if (!this.fallbackNotificationsEnabled) return;
+
+        // 瀏覽器通知
+        this.showBrowserNotification();
+
+        // 標題欄通知
+        this.showTitleBarNotification();
+
+        // 視覺指示器
+        this.showVisualNotificationIndicator();
+    };
+
+    /**
+     * 顯示瀏覽器通知
+     */
+    AudioManager.prototype.showBrowserNotification = function() {
+        if (!('Notification' in window) || Notification.permission !== 'granted') {
+            return;
+        }
+
+        const notification = new Notification('MCP Feedback Enhanced', {
+            body: '有新訊息到達',
+            icon: '/favicon.ico',
+            tag: 'mcp-feedback-notification'
+        });
+
+        // 自動關閉通知
+        setTimeout(() => {
+            notification.close();
+        }, 3000);
+    };
+
+    /**
+     * 顯示標題欄通知
+     */
+    AudioManager.prototype.showTitleBarNotification = function() {
+        if (this.titleBarNotificationActive) return;
+
+        this.titleBarNotificationActive = true;
+        let count = 0;
+
+        const interval = setInterval(() => {
+            document.title = count % 2 === 0 ? '🔔 新訊息 - MCP Feedback' : this.originalTitle;
+            count++;
+
+            if (count >= 6) { // 閃爍 3 次
+                clearInterval(interval);
+                document.title = this.originalTitle;
+                this.titleBarNotificationActive = false;
+            }
+        }, 500);
+    };
+
+    /**
+     * 顯示視覺通知指示器
+     */
+    AudioManager.prototype.showVisualNotificationIndicator = function() {
+        // 創建或更新視覺指示器
+        let indicator = document.getElementById('audioFallbackIndicator');
+
+        if (!indicator) {
+            indicator = document.createElement('div');
+            indicator.id = 'audioFallbackIndicator';
+            indicator.className = 'audio-fallback-indicator';
+            indicator.innerHTML = `
+                <div class="indicator-content">
+                    <span class="indicator-icon">🔔</span>
+                    <span class="indicator-text">新訊息通知</span>
+                </div>
+            `;
+            document.body.appendChild(indicator);
+        }
+
+        indicator.classList.add('show');
+
+        // 自動隱藏
+        setTimeout(() => {
+            indicator.classList.remove('show');
+        }, 3000);
+    };
+
+    /**
+     * 顯示增強的自動播放被阻止通知
+     */
+    AudioManager.prototype.showEnhancedAutoplayBlockedNotification = function() {
         // 只顯示一次通知
         if (this.autoplayNotificationShown) return;
         this.autoplayNotificationShown = true;
 
-        console.log('🔇 瀏覽器阻止音效自動播放，請點擊頁面任意位置以啟用音效通知');
+        console.log('🔇 瀏覽器阻止音效自動播放，已啟用備用通知方法');
 
-        // 可以在這裡添加 UI 通知邏輯
+        // 顯示增強的通知
         if (window.MCPFeedback && window.MCPFeedback.Utils && window.MCPFeedback.Utils.showMessage) {
             const message = window.i18nManager ?
-                window.i18nManager.t('audio.autoplayBlocked', '瀏覽器阻止音效自動播放，請點擊頁面以啟用音效通知') :
-                '瀏覽器阻止音效自動播放，請點擊頁面以啟用音效通知';
+                window.i18nManager.t('audio.autoplayBlockedEnhanced', '音效被阻止，已啟用視覺和瀏覽器通知') :
+                '音效被阻止，已啟用視覺和瀏覽器通知';
             window.MCPFeedback.Utils.showMessage(message, 'info');
+        }
+    };
+
+    /**
+     * 更新音效權限狀態
+     */
+    AudioManager.prototype.updateAudioPermissionStatus = function(granted) {
+        if (granted && !this.audioPermissionGranted) {
+            this.audioPermissionGranted = true;
+            localStorage.setItem('audioPermissionGranted', 'true');
+            this.updateAudioPermissionIndicator();
+            console.log('✅ 音效權限狀態已更新為已授予');
         }
     };
 
@@ -602,6 +900,101 @@
      */
     AudioManager.prototype.getSettings = function() {
         return Utils.deepClone(this.currentAudioSettings);
+    };
+
+    /**
+     * 創建音效權限指示器
+     */
+    AudioManager.prototype.createAudioPermissionIndicator = function() {
+        // 檢查是否已存在
+        if (document.getElementById('audioPermissionIndicator')) {
+            return;
+        }
+
+        const indicator = document.createElement('div');
+        indicator.id = 'audioPermissionIndicator';
+        indicator.className = 'audio-permission-indicator';
+        indicator.innerHTML = `
+            <div class="indicator-content">
+                <span class="indicator-icon">🔊</span>
+                <span class="indicator-status">音效狀態</span>
+                <button class="enable-audio-btn" style="display: none;">啟用音效</button>
+            </div>
+        `;
+
+        // 添加點擊事件
+        const enableBtn = indicator.querySelector('.enable-audio-btn');
+        enableBtn.addEventListener('click', () => {
+            this.requestAudioPermission();
+        });
+
+        // 添加到頁面（可以添加到設定區域或狀態欄）
+        const targetContainer = document.querySelector('.quick-actions') || document.body;
+        targetContainer.appendChild(indicator);
+
+        this.updateAudioPermissionIndicator();
+    };
+
+    /**
+     * 更新音效權限指示器
+     */
+    AudioManager.prototype.updateAudioPermissionIndicator = function() {
+        const indicator = document.getElementById('audioPermissionIndicator');
+        if (!indicator) return;
+
+        const icon = indicator.querySelector('.indicator-icon');
+        const status = indicator.querySelector('.indicator-status');
+        const enableBtn = indicator.querySelector('.enable-audio-btn');
+
+        if (this.audioPermissionGranted) {
+            icon.textContent = '🔊';
+            status.textContent = '音效已啟用';
+            enableBtn.style.display = 'none';
+            indicator.className = 'audio-permission-indicator enabled';
+        } else if (this.audioPermissionRequested) {
+            icon.textContent = '🔔';
+            status.textContent = '使用備用通知';
+            enableBtn.style.display = 'none';
+            indicator.className = 'audio-permission-indicator fallback';
+        } else {
+            icon.textContent = '🔇';
+            status.textContent = '音效未啟用';
+            enableBtn.style.display = 'inline-block';
+            indicator.className = 'audio-permission-indicator disabled';
+        }
+    };
+
+    /**
+     * 切換音效權限（用於設定頁面）
+     */
+    AudioManager.prototype.toggleAudioPermission = function() {
+        if (this.audioPermissionGranted) {
+            // 禁用音效
+            this.audioPermissionGranted = false;
+            localStorage.setItem('audioPermissionGranted', 'false');
+            this.enableFallbackNotifications();
+        } else {
+            // 請求音效權限
+            this.requestAudioPermission();
+        }
+
+        this.updateAudioPermissionIndicator();
+    };
+
+    /**
+     * 重置音效權限（用於設定重置）
+     */
+    AudioManager.prototype.resetAudioPermission = function() {
+        this.audioPermissionRequested = false;
+        this.audioPermissionGranted = false;
+        this.permissionDialogShown = false;
+        this.fallbackNotificationsEnabled = false;
+
+        localStorage.removeItem('audioPermissionRequested');
+        localStorage.removeItem('audioPermissionGranted');
+
+        this.updateAudioPermissionIndicator();
+        console.log('🔄 音效權限已重置');
     };
 
     // 匯出到全域命名空間

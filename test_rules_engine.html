@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Message Type Rules Engine Test</title>
+    <style>
+        :root {
+            --bg-primary: #1e1e1e;
+            --bg-secondary: #2d2d30;
+            --bg-tertiary: #3e3e42;
+            --text-primary: #cccccc;
+            --text-secondary: #9e9e9e;
+            --accent-color: #007acc;
+            --border-color: #464647;
+            --success-color: #4caf50;
+            --warning-color: #ff9800;
+            --error-color: #dc3545;
+        }
+        
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .test-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .test-header {
+            background: var(--bg-secondary);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .test-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .test-section {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .test-controls {
+            background: rgba(0, 122, 204, 0.1);
+            border: 1px solid var(--accent-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .control-group {
+            margin-bottom: 15px;
+        }
+        
+        .btn {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 8px;
+            font-size: 14px;
+            transition: background 0.2s ease;
+        }
+        
+        .btn:hover {
+            background: #005a9e;
+        }
+        
+        .btn-success {
+            background: var(--success-color);
+        }
+        
+        .btn-warning {
+            background: var(--warning-color);
+        }
+        
+        .btn-error {
+            background: var(--error-color);
+        }
+        
+        .btn-secondary {
+            background: var(--text-secondary);
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .input-group input,
+        .input-group select,
+        .input-group textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+        
+        .input-group textarea {
+            height: 100px;
+            resize: vertical;
+        }
+        
+        .results-display {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .results-display pre {
+            margin: 0;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+        
+        .rule-card {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+        
+        .rule-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .rule-title {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .rule-status {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        
+        .rule-status.enabled {
+            background: rgba(76, 175, 80, 0.2);
+            color: var(--success-color);
+        }
+        
+        .rule-status.disabled {
+            background: rgba(158, 158, 158, 0.2);
+            color: var(--text-secondary);
+        }
+        
+        .rule-details {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .rule-meta {
+            display: flex;
+            gap: 15px;
+            margin-top: 8px;
+            font-size: 11px;
+        }
+        
+        .feature-list {
+            background: rgba(76, 175, 80, 0.1);
+            border: 1px solid var(--success-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .feature-list h3 {
+            color: var(--success-color);
+            margin-top: 0;
+        }
+        
+        @media (max-width: 768px) {
+            .test-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-header">
+            <h1>🔧 Message Type Rules Engine Test</h1>
+            <p>This test demonstrates the backend rules engine that stores and applies configurable rules based on message types, including auto-submit overrides, response headers/footers, and project grouping.</p>
+        </div>
+        
+        <div class="test-controls">
+            <h3>🎮 Test Controls</h3>
+            
+            <div class="control-group">
+                <strong>Quick Tests:</strong><br>
+                <button class="btn btn-success" onclick="testDefaultRules()">📋 Test Default Rules</button>
+                <button class="btn btn-warning" onclick="testRuleMatching()">🎯 Test Rule Matching</button>
+                <button class="btn" onclick="testConfigApplication()">⚙️ Test Config Application</button>
+                <button class="btn btn-secondary" onclick="clearResults()">🗑️ Clear Results</button>
+            </div>
+        </div>
+        
+        <div class="test-grid">
+            <!-- Rule Testing Section -->
+            <div class="test-section">
+                <h3>🧪 Rule Testing</h3>
+                
+                <div class="input-group">
+                    <label for="testMessageType">Message Type:</label>
+                    <select id="testMessageType">
+                        <option value="general">General</option>
+                        <option value="code_review">Code Review</option>
+                        <option value="error_report">Error Report</option>
+                        <option value="feature_request">Feature Request</option>
+                        <option value="documentation">Documentation</option>
+                        <option value="testing">Testing</option>
+                        <option value="deployment">Deployment</option>
+                        <option value="security">Security</option>
+                    </select>
+                </div>
+                
+                <div class="input-group">
+                    <label for="testProjectPath">Project Path:</label>
+                    <input type="text" id="testProjectPath" value="/Users/developer/projects/test-project" placeholder="Enter project path">
+                </div>
+                
+                <button class="btn" onclick="testSpecificRule()">🎯 Test Rule Matching</button>
+                <button class="btn" onclick="applyRulesToConfig()">⚙️ Apply Rules to Config</button>
+                
+                <div class="results-display" id="ruleTestResults">
+                    <pre>Click a test button to see results...</pre>
+                </div>
+            </div>
+            
+            <!-- Configuration Testing Section -->
+            <div class="test-section">
+                <h3>⚙️ Configuration Testing</h3>
+                
+                <div class="input-group">
+                    <label for="baseConfig">Base Configuration (JSON):</label>
+                    <textarea id="baseConfig" placeholder="Enter base configuration JSON">{
+  "auto_submit": false,
+  "timeout": 600,
+  "response_text": "Please provide your feedback.",
+  "template_id": null
+}</textarea>
+                </div>
+                
+                <button class="btn" onclick="testConfigMerging()">🔀 Test Config Merging</button>
+                <button class="btn" onclick="testPriorityResolution()">📊 Test Priority Resolution</button>
+                
+                <div class="results-display" id="configTestResults">
+                    <pre>Click a test button to see results...</pre>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Default Rules Display -->
+        <div class="test-section">
+            <h3>📋 Default Rules Overview</h3>
+            <div id="defaultRulesDisplay">
+                <!-- Rules will be populated by JavaScript -->
+            </div>
+        </div>
+        
+        <div class="feature-list">
+            <h3>✨ Rules Engine Features</h3>
+            <ul>
+                <li><strong>🏗️ Persistent Storage:</strong> JSON-based storage with atomic operations and backup management</li>
+                <li><strong>🎯 Rule Matching:</strong> Pattern-based matching for message types and project paths</li>
+                <li><strong>📊 Priority System:</strong> Priority-based rule resolution with conflict handling</li>
+                <li><strong>🔧 Rule Types:</strong> Auto-submit overrides, timeout overrides, response headers/footers, template overrides</li>
+                <li><strong>📁 Project Filtering:</strong> Support for 'all', 'specific', 'exclude', and 'regex' project filters</li>
+                <li><strong>⚙️ Configuration Merging:</strong> Smart merging of base configuration with rule overrides</li>
+                <li><strong>🧪 Testing Framework:</strong> Built-in rule matching and configuration testing</li>
+                <li><strong>📦 Backup Management:</strong> Automatic backup creation and cleanup</li>
+                <li><strong>🔄 Cache Management:</strong> Intelligent caching with automatic invalidation</li>
+                <li><strong>✅ Validation:</strong> Comprehensive rule validation and error handling</li>
+            </ul>
+        </div>
+        
+        <div style="background: rgba(255, 152, 0, 0.1); border: 1px solid var(--warning-color); border-radius: 8px; padding: 20px; margin-top: 20px;">
+            <h3 style="color: var(--warning-color); margin-top: 0;">🧪 Test Instructions</h3>
+            <ol>
+                <li><strong>Default Rules:</strong> Click "Test Default Rules" to see the predefined rules</li>
+                <li><strong>Rule Matching:</strong> Select different message types and project paths to test matching</li>
+                <li><strong>Configuration Testing:</strong> Modify the base configuration and see how rules are applied</li>
+                <li><strong>Priority Testing:</strong> Test how multiple matching rules are resolved by priority</li>
+                <li><strong>Project Filtering:</strong> Test different project path patterns to see filtering in action</li>
+                <li><strong>Config Merging:</strong> See how rule values are merged into the base configuration</li>
+                <li><strong>Error Handling:</strong> Test with invalid configurations to see error handling</li>
+                <li><strong>Performance:</strong> Test with multiple rules to see caching and performance</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        // Mock rules engine for testing
+        const mockDefaultRules = [
+            {
+                id: "error_report_auto_submit",
+                name: "Error Report Auto Submit",
+                description: "Automatically submit error reports after 5 minutes",
+                message_type: "error_report",
+                rule_type: "auto_submit_override",
+                value: true,
+                timeout_override: 300,
+                project_filter: { type: "all" },
+                priority: 100,
+                enabled: true
+            },
+            {
+                id: "testing_auto_submit",
+                name: "Testing Auto Submit",
+                description: "Auto-submit testing results after 7.5 minutes",
+                message_type: "testing",
+                rule_type: "auto_submit_override",
+                value: true,
+                timeout_override: 450,
+                project_filter: { type: "all" },
+                priority: 90,
+                enabled: true
+            },
+            {
+                id: "deployment_auto_submit",
+                name: "Deployment Auto Submit",
+                description: "Quick auto-submit for deployment confirmations",
+                message_type: "deployment",
+                rule_type: "auto_submit_override",
+                value: true,
+                timeout_override: 300,
+                project_filter: { type: "all" },
+                priority: 95,
+                enabled: true
+            },
+            {
+                id: "code_review_header",
+                name: "Code Review Header",
+                description: "Add standard header for code review responses",
+                message_type: "code_review",
+                rule_type: "response_header",
+                value: "## Code Review Feedback\n\nThank you for the code review. Here are my responses:\n\n",
+                project_filter: { type: "all" },
+                priority: 50,
+                enabled: true
+            },
+            {
+                id: "security_footer",
+                name: "Security Review Footer",
+                description: "Add security disclaimer to security-related responses",
+                message_type: "security",
+                rule_type: "response_footer",
+                value: "\n\n---\n**Security Note**: This feedback is for development purposes. Please conduct proper security audits before production deployment.",
+                project_filter: { type: "all" },
+                priority: 50,
+                enabled: true
+            }
+        ];
+        
+        // Mock rules engine functions
+        function findApplicableRules(messageType, projectPath) {
+            return mockDefaultRules.filter(rule => {
+                if (!rule.enabled) return false;
+                if (rule.message_type !== messageType) return false;
+                
+                // Simple project filter logic
+                const filter = rule.project_filter;
+                if (filter.type === "all") return true;
+                if (filter.type === "specific") {
+                    return filter.patterns && filter.patterns.some(pattern => 
+                        projectPath.includes(pattern) || projectPath.endsWith(pattern)
+                    );
+                }
+                return true;
+            }).sort((a, b) => b.priority - a.priority);
+        }
+        
+        function applyRules(messageType, projectPath, baseConfig) {
+            const applicableRules = findApplicableRules(messageType, projectPath);
+            const config = { ...baseConfig };
+            
+            for (const rule of applicableRules) {
+                switch (rule.rule_type) {
+                    case "auto_submit_override":
+                        config.auto_submit = rule.value;
+                        if (rule.timeout_override) {
+                            config.timeout = rule.timeout_override;
+                        }
+                        break;
+                    case "timeout_override":
+                        config.timeout = rule.value;
+                        break;
+                    case "response_header":
+                        config.response_text = rule.value + (config.response_text || "");
+                        break;
+                    case "response_footer":
+                        config.response_text = (config.response_text || "") + rule.value;
+                        break;
+                    case "template_override":
+                        config.template_id = rule.value;
+                        break;
+                }
+            }
+            
+            return { config, appliedRules: applicableRules };
+        }
+        
+        // Test functions
+        function testDefaultRules() {
+            const display = document.getElementById('defaultRulesDisplay');
+            display.innerHTML = '';
+            
+            mockDefaultRules.forEach(rule => {
+                const ruleCard = document.createElement('div');
+                ruleCard.className = 'rule-card';
+                ruleCard.innerHTML = `
+                    <div class="rule-header">
+                        <div class="rule-title">${rule.name}</div>
+                        <div class="rule-status ${rule.enabled ? 'enabled' : 'disabled'}">
+                            ${rule.enabled ? 'Enabled' : 'Disabled'}
+                        </div>
+                    </div>
+                    <div class="rule-details">${rule.description}</div>
+                    <div class="rule-meta">
+                        <span><strong>Type:</strong> ${rule.message_type}</span>
+                        <span><strong>Rule:</strong> ${rule.rule_type}</span>
+                        <span><strong>Priority:</strong> ${rule.priority}</span>
+                    </div>
+                `;
+                display.appendChild(ruleCard);
+            });
+            
+            updateResults('ruleTestResults', `✅ Loaded ${mockDefaultRules.length} default rules`);
+        }
+        
+        function testRuleMatching() {
+            const results = [];
+            const testCases = [
+                { messageType: 'error_report', projectPath: '/test/project' },
+                { messageType: 'code_review', projectPath: '/web/app' },
+                { messageType: 'general', projectPath: '/any/project' },
+                { messageType: 'testing', projectPath: '/test/suite' },
+                { messageType: 'security', projectPath: '/secure/app' }
+            ];
+            
+            testCases.forEach(testCase => {
+                const applicable = findApplicableRules(testCase.messageType, testCase.projectPath);
+                results.push(`📋 ${testCase.messageType} @ ${testCase.projectPath}:`);
+                results.push(`   Found ${applicable.length} matching rules`);
+                applicable.forEach(rule => {
+                    results.push(`   ✅ ${rule.id} (priority: ${rule.priority})`);
+                });
+                results.push('');
+            });
+            
+            updateResults('ruleTestResults', results.join('\n'));
+        }
+        
+        function testSpecificRule() {
+            const messageType = document.getElementById('testMessageType').value;
+            const projectPath = document.getElementById('testProjectPath').value;
+            
+            const applicable = findApplicableRules(messageType, projectPath);
+            
+            const results = [
+                `🎯 Rule Matching Test`,
+                `Message Type: ${messageType}`,
+                `Project Path: ${projectPath}`,
+                ``,
+                `Found ${applicable.length} matching rules:`,
+                ``
+            ];
+            
+            applicable.forEach(rule => {
+                results.push(`✅ ${rule.id}: ${rule.name}`);
+                results.push(`   Type: ${rule.rule_type}`);
+                results.push(`   Priority: ${rule.priority}`);
+                results.push(`   Value: ${JSON.stringify(rule.value)}`);
+                results.push('');
+            });
+            
+            updateResults('ruleTestResults', results.join('\n'));
+        }
+        
+        function applyRulesToConfig() {
+            const messageType = document.getElementById('testMessageType').value;
+            const projectPath = document.getElementById('testProjectPath').value;
+            
+            const baseConfig = {
+                auto_submit: false,
+                timeout: 600,
+                response_text: "Please provide your feedback.",
+                template_id: null
+            };
+            
+            const { config, appliedRules } = applyRules(messageType, projectPath, baseConfig);
+            
+            const results = [
+                `⚙️ Configuration Application Test`,
+                `Message Type: ${messageType}`,
+                `Project Path: ${projectPath}`,
+                ``,
+                `Base Configuration:`,
+                JSON.stringify(baseConfig, null, 2),
+                ``,
+                `Applied Rules (${appliedRules.length}):`,
+                appliedRules.map(r => `  • ${r.id} (${r.rule_type})`).join('\n'),
+                ``,
+                `Final Configuration:`,
+                JSON.stringify(config, null, 2)
+            ];
+            
+            updateResults('ruleTestResults', results.join('\n'));
+        }
+        
+        function testConfigMerging() {
+            try {
+                const baseConfigText = document.getElementById('baseConfig').value;
+                const baseConfig = JSON.parse(baseConfigText);
+                
+                const testCases = [
+                    { messageType: 'error_report', projectPath: '/test' },
+                    { messageType: 'code_review', projectPath: '/web' },
+                    { messageType: 'security', projectPath: '/secure' }
+                ];
+                
+                const results = ['🔀 Configuration Merging Test\n'];
+                
+                testCases.forEach(testCase => {
+                    const { config, appliedRules } = applyRules(testCase.messageType, testCase.projectPath, baseConfig);
+                    
+                    results.push(`📋 ${testCase.messageType}:`);
+                    results.push(`   Applied ${appliedRules.length} rules`);
+                    results.push(`   Final timeout: ${config.timeout}s`);
+                    results.push(`   Auto-submit: ${config.auto_submit}`);
+                    results.push('');
+                });
+                
+                updateResults('configTestResults', results.join('\n'));
+                
+            } catch (e) {
+                updateResults('configTestResults', `❌ JSON Parse Error: ${e.message}`);
+            }
+        }
+        
+        function testPriorityResolution() {
+            // Test with multiple rules that could conflict
+            const messageType = 'testing'; // Has auto-submit rule
+            const projectPath = '/test/project';
+            
+            const applicable = findApplicableRules(messageType, projectPath);
+            
+            const results = [
+                `📊 Priority Resolution Test`,
+                `Message Type: ${messageType}`,
+                ``,
+                `Rules in priority order:`,
+                ``
+            ];
+            
+            applicable.forEach((rule, index) => {
+                results.push(`${index + 1}. ${rule.id} (priority: ${rule.priority})`);
+                results.push(`   Type: ${rule.rule_type}`);
+                results.push(`   Value: ${JSON.stringify(rule.value)}`);
+                results.push('');
+            });
+            
+            updateResults('configTestResults', results.join('\n'));
+        }
+        
+        function testConfigApplication() {
+            const testResults = [];
+            
+            // Test all message types with default config
+            const messageTypes = ['general', 'code_review', 'error_report', 'feature_request', 'documentation', 'testing', 'deployment', 'security'];
+            const baseConfig = { auto_submit: false, timeout: 600, response_text: "Base response" };
+            
+            messageTypes.forEach(messageType => {
+                const { config, appliedRules } = applyRules(messageType, '/test/project', baseConfig);
+                testResults.push(`${messageType}: ${appliedRules.length} rules, timeout=${config.timeout}s, auto_submit=${config.auto_submit}`);
+            });
+            
+            updateResults('ruleTestResults', `⚙️ Config Application Test:\n\n${testResults.join('\n')}`);
+        }
+        
+        function updateResults(elementId, content) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<pre>${content}</pre>`;
+        }
+        
+        function clearResults() {
+            updateResults('ruleTestResults', 'Results cleared...');
+            updateResults('configTestResults', 'Results cleared...');
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            testDefaultRules();
+            console.log('✅ Rules Engine Test initialized');
+        });
+    </script>
+</body>
+</html>

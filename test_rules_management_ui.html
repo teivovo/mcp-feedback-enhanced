@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rules Management UI Test</title>
+    <link rel="stylesheet" href="src/mcp_feedback_enhanced/web/static/css/styles.css">
+    <style>
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .test-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .test-header {
+            background: var(--bg-secondary);
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+        
+        .test-header h1 {
+            margin: 0;
+            font-size: 20px;
+            color: var(--accent-color);
+        }
+        
+        .test-content {
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .feature-info {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 122, 204, 0.1);
+            border: 1px solid var(--accent-color);
+            border-radius: 8px;
+            padding: 16px;
+            max-width: 300px;
+            z-index: 1000;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        
+        .feature-info h3 {
+            margin: 0 0 12px 0;
+            color: var(--accent-color);
+            font-size: 14px;
+        }
+        
+        .feature-info ul {
+            margin: 8px 0;
+            padding-left: 16px;
+        }
+        
+        .feature-info li {
+            margin-bottom: 4px;
+        }
+        
+        .close-info {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 16px;
+            padding: 4px;
+        }
+        
+        .close-info:hover {
+            color: var(--text-primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-header">
+            <h1>🔧 Rules Management UI Test</h1>
+            <p style="margin: 8px 0 0 0; color: var(--text-secondary); font-size: 14px;">
+                Interactive test for the message type rules management interface
+            </p>
+        </div>
+        
+        <div class="test-content">
+            <div id="rulesManagerContainer"></div>
+        </div>
+    </div>
+    
+    <div class="feature-info" id="featureInfo">
+        <button class="close-info" onclick="closeFeatureInfo()">×</button>
+        <h3>✨ Rules Management Features</h3>
+        <ul>
+            <li><strong>📋 Rule Organization:</strong> Project-based grouping with accordion interface</li>
+            <li><strong>✏️ Visual Editor:</strong> Form-based rule creation and editing</li>
+            <li><strong>🧪 Rule Testing:</strong> Test rule matching with different scenarios</li>
+            <li><strong>📁 Project Filtering:</strong> All, specific, exclude, and regex patterns</li>
+            <li><strong>🎯 Rule Types:</strong> Auto-submit, timeout, headers, footers, templates</li>
+            <li><strong>📊 Priority System:</strong> Conflict resolution with priority ordering</li>
+            <li><strong>💾 Import/Export:</strong> Rule configuration backup and sharing</li>
+            <li><strong>📱 Responsive Design:</strong> Mobile-friendly interface</li>
+        </ul>
+        
+        <h3>🎮 Test Instructions</h3>
+        <ul>
+            <li>Click accordion groups to expand/collapse</li>
+            <li>Hover over rules to see action buttons</li>
+            <li>Click "新增規則" to create new rules</li>
+            <li>Use test panel to verify rule matching</li>
+            <li>Try different project paths and message types</li>
+        </ul>
+    </div>
+
+    <!-- Load the rules manager -->
+    <script src="src/mcp_feedback_enhanced/web/static/js/modules/rules-manager.js"></script>
+    
+    <script>
+        // Initialize the rules manager when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔧 Initializing Rules Management UI Test');
+            
+            // Create rules manager instance
+            const rulesManager = new window.MCPFeedback.RulesManager();
+            
+            // Initialize with container and options
+            const success = rulesManager.initialize('rulesManagerContainer', {
+                onRuleChange: function(rule) {
+                    console.log('📝 Rule changed:', rule);
+                },
+                onRuleTest: function(results) {
+                    console.log('🧪 Rule test results:', results);
+                }
+            });
+            
+            if (success) {
+                console.log('✅ Rules Manager initialized successfully');
+            } else {
+                console.error('❌ Failed to initialize Rules Manager');
+            }
+            
+            // Add some test interactions
+            setupTestInteractions();
+        });
+        
+        function setupTestInteractions() {
+            // Add keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                if (e.ctrlKey || e.metaKey) {
+                    switch (e.key) {
+                        case 'n':
+                            e.preventDefault();
+                            console.log('⌨️ Keyboard shortcut: New Rule (Ctrl+N)');
+                            // Trigger new rule creation
+                            const addBtn = document.getElementById('addRuleBtn');
+                            if (addBtn) addBtn.click();
+                            break;
+                        case 't':
+                            e.preventDefault();
+                            console.log('⌨️ Keyboard shortcut: Test Rules (Ctrl+T)');
+                            // Trigger rule testing
+                            const testBtn = document.getElementById('testRulesBtn');
+                            if (testBtn) testBtn.click();
+                            break;
+                        case 'i':
+                            e.preventDefault();
+                            console.log('⌨️ Keyboard shortcut: Toggle Info (Ctrl+I)');
+                            // Toggle feature info
+                            toggleFeatureInfo();
+                            break;
+                    }
+                }
+            });
+            
+            // Add demo data updates
+            setTimeout(() => {
+                console.log('📊 Adding demo rule interactions...');
+                addDemoInteractions();
+            }, 1000);
+        }
+        
+        function addDemoInteractions() {
+            // Simulate rule selection
+            const firstRule = document.querySelector('.rule-item');
+            if (firstRule) {
+                firstRule.addEventListener('click', function() {
+                    // Remove previous selections
+                    document.querySelectorAll('.rule-item.selected').forEach(item => {
+                        item.classList.remove('selected');
+                    });
+                    
+                    // Add selection to clicked rule
+                    this.classList.add('selected');
+                    console.log('📋 Rule selected:', this.dataset.ruleId);
+                });
+            }
+            
+            // Add rule action handlers
+            document.querySelectorAll('.edit-rule').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const ruleId = this.closest('.rule-item').dataset.ruleId;
+                    console.log('✏️ Edit rule:', ruleId);
+                    showEditDemo(ruleId);
+                });
+            });
+            
+            document.querySelectorAll('.delete-rule').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const ruleId = this.closest('.rule-item').dataset.ruleId;
+                    console.log('🗑️ Delete rule:', ruleId);
+                    showDeleteDemo(ruleId);
+                });
+            });
+        }
+        
+        function showEditDemo(ruleId) {
+            // Simulate showing rule editor
+            const editor = document.getElementById('ruleEditor');
+            if (editor) {
+                editor.scrollIntoView({ behavior: 'smooth' });
+                
+                // Add visual feedback
+                editor.style.border = '2px solid var(--accent-color)';
+                setTimeout(() => {
+                    editor.style.border = '';
+                }, 2000);
+            }
+        }
+        
+        function showDeleteDemo(ruleId) {
+            // Simulate delete confirmation
+            if (confirm(`確定要刪除規則 "${ruleId}" 嗎？\n\n這是一個演示，實際上不會刪除任何內容。`)) {
+                console.log('✅ User confirmed deletion (demo)');
+                
+                // Visual feedback
+                const ruleItem = document.querySelector(`[data-rule-id="${ruleId}"]`);
+                if (ruleItem) {
+                    ruleItem.style.opacity = '0.5';
+                    ruleItem.style.transform = 'scale(0.95)';
+                    
+                    setTimeout(() => {
+                        ruleItem.style.opacity = '';
+                        ruleItem.style.transform = '';
+                    }, 1500);
+                }
+            }
+        }
+        
+        function closeFeatureInfo() {
+            const info = document.getElementById('featureInfo');
+            if (info) {
+                info.style.display = 'none';
+            }
+        }
+        
+        function toggleFeatureInfo() {
+            const info = document.getElementById('featureInfo');
+            if (info) {
+                info.style.display = info.style.display === 'none' ? 'block' : 'none';
+            }
+        }
+        
+        // Add some demo console messages
+        console.log('🎮 Rules Management UI Test loaded');
+        console.log('⌨️ Keyboard shortcuts:');
+        console.log('  Ctrl+N: New Rule');
+        console.log('  Ctrl+T: Test Rules');
+        console.log('  Ctrl+I: Toggle Info Panel');
+        
+        // Performance monitoring
+        window.addEventListener('load', function() {
+            console.log('⚡ Page load complete');
+            console.log('📊 Performance metrics:');
+            console.log(`  DOM Content Loaded: ${performance.timing.domContentLoadedEventEnd - performance.timing.navigationStart}ms`);
+            console.log(`  Page Load: ${performance.timing.loadEventEnd - performance.timing.navigationStart}ms`);
+        });
+        
+        // Error handling
+        window.addEventListener('error', function(e) {
+            console.error('❌ JavaScript Error:', e.error);
+        });
+        
+        // Responsive design testing
+        function checkResponsiveBreakpoints() {
+            const width = window.innerWidth;
+            let breakpoint = 'desktop';
+            
+            if (width <= 480) {
+                breakpoint = 'mobile-small';
+            } else if (width <= 768) {
+                breakpoint = 'mobile';
+            } else if (width <= 1024) {
+                breakpoint = 'tablet';
+            }
+            
+            console.log(`📱 Current breakpoint: ${breakpoint} (${width}px)`);
+            return breakpoint;
+        }
+        
+        window.addEventListener('resize', function() {
+            checkResponsiveBreakpoints();
+        });
+        
+        // Initial breakpoint check
+        setTimeout(() => {
+            checkResponsiveBreakpoints();
+        }, 100);
+    </script>
+</body>
+</html>

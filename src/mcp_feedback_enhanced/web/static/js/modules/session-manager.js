@@ -38,8 +38,12 @@
         this.onSessionChange = options.onSessionChange || null;
         this.onSessionSelect = options.onSessionSelect || null;
 
+        // 專案上下文管理
+        this.projectContextManager = null;
+
         this.initializeModules(options);
         this.setupEventListeners();
+        this.initializeProjectContext();
 
         console.log('📋 SessionManager (重構版) 初始化完成');
     }
@@ -626,6 +630,579 @@
 
 
         console.log('📋 SessionManager (重構版) 清理完成');
+    };
+
+    /**
+     * 初始化專案上下文
+     */
+    SessionManager.prototype.initializeProjectContext = function() {
+        // 創建專案上下文管理器
+        this.projectContextManager = new ProjectContextManager();
+
+        // 設置事件監聽器
+        this.setupProjectContextEvents();
+
+        // 初始化專案信息
+        this.updateProjectContext();
+
+        console.log('📂 專案上下文管理器初始化完成');
+    };
+
+    /**
+     * 設置專案上下文事件
+     */
+    SessionManager.prototype.setupProjectContextEvents = function() {
+        const projectDetailsBtn = document.getElementById('projectDetailsBtn');
+        const projectNameDisplay = document.getElementById('projectNameDisplay');
+        const projectPathDisplay = document.getElementById('projectPathDisplay');
+
+        // 專案詳情按鈕
+        if (projectDetailsBtn) {
+            projectDetailsBtn.addEventListener('click', () => {
+                this.showProjectDetails();
+            });
+        }
+
+        // 專案名稱點擊
+        if (projectNameDisplay) {
+            projectNameDisplay.addEventListener('click', () => {
+                this.showProjectDetails();
+            });
+        }
+
+        // 專案路徑點擊複製
+        if (projectPathDisplay) {
+            projectPathDisplay.addEventListener('click', () => {
+                this.copyProjectPath();
+            });
+        }
+    };
+
+    /**
+     * 更新專案上下文
+     */
+    SessionManager.prototype.updateProjectContext = function() {
+        if (!this.projectContextManager) return;
+
+        const projectData = this.projectContextManager.getCurrentProject();
+        this.updateProjectDisplay(projectData);
+    };
+
+    /**
+     * 更新專案顯示
+     */
+    SessionManager.prototype.updateProjectDisplay = function(projectData) {
+        const projectNameDisplay = document.getElementById('projectNameDisplay');
+        const projectIcon = document.getElementById('projectIcon');
+        const projectTypeIndicator = document.getElementById('projectTypeIndicator');
+        const projectTypeText = document.getElementById('projectTypeText');
+
+        if (projectNameDisplay) {
+            projectNameDisplay.textContent = projectData.name || 'Unknown Project';
+        }
+
+        if (projectIcon) {
+            projectIcon.textContent = this.getProjectIcon(projectData.type);
+        }
+
+        if (projectTypeIndicator && projectTypeText) {
+            projectTypeIndicator.className = `project-type-indicator ${projectData.type}-project`;
+            projectTypeText.textContent = this.getProjectTypeLabel(projectData.type);
+        }
+
+        // 更新 agent 上下文（如果有）
+        this.updateAgentContext(projectData.agent);
+    };
+
+    /**
+     * 更新 Agent 上下文
+     */
+    SessionManager.prototype.updateAgentContext = function(agentInfo) {
+        const agentContextIndicator = document.getElementById('agentContextIndicator');
+        const agentContextText = document.getElementById('agentContextText');
+
+        if (!agentContextIndicator || !agentContextText) return;
+
+        if (agentInfo && agentInfo.name) {
+            agentContextIndicator.style.display = 'flex';
+            agentContextIndicator.className = 'agent-context-indicator active';
+            agentContextText.textContent = agentInfo.name;
+        } else {
+            agentContextIndicator.style.display = 'none';
+        }
+    };
+
+    /**
+     * 獲取專案圖標
+     */
+    SessionManager.prototype.getProjectIcon = function(type) {
+        const icons = {
+            'web': '🌐',
+            'mobile': '📱',
+            'desktop': '🖥️',
+            'api': '🔌',
+            'data': '📊',
+            'general': '📂'
+        };
+        return icons[type] || icons.general;
+    };
+
+    /**
+     * 獲取專案類型標籤
+     */
+    SessionManager.prototype.getProjectTypeLabel = function(type) {
+        const labels = {
+            'web': 'Web',
+            'mobile': 'Mobile',
+            'desktop': 'Desktop',
+            'api': 'API',
+            'data': 'Data',
+            'general': 'General'
+        };
+        return labels[type] || labels.general;
+    };
+
+    /**
+     * 顯示專案詳情
+     */
+    SessionManager.prototype.showProjectDetails = function() {
+        if (!this.projectContextManager) return;
+
+        const projectData = this.projectContextManager.getCurrentProject();
+        this.projectContextManager.showProjectDetailsModal(projectData);
+    };
+
+    /**
+     * 複製專案路徑
+     */
+    SessionManager.prototype.copyProjectPath = function() {
+        const projectPathDisplay = document.getElementById('projectPathDisplay');
+        if (!projectPathDisplay) return;
+
+        const fullPath = projectPathDisplay.getAttribute('data-full-path') || projectPathDisplay.textContent;
+
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(fullPath).then(() => {
+                console.log('📋 專案路徑已複製到剪貼板');
+                this.showCopyFeedback(projectPathDisplay);
+            }).catch(err => {
+                console.error('❌ 複製失敗:', err);
+            });
+        } else {
+            // 備用方法
+            const textArea = document.createElement('textarea');
+            textArea.value = fullPath;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            console.log('📋 專案路徑已複製到剪貼板（備用方法）');
+            this.showCopyFeedback(projectPathDisplay);
+        }
+    };
+
+    /**
+     * 顯示複製回饋
+     */
+    SessionManager.prototype.showCopyFeedback = function(element) {
+        const originalText = element.textContent;
+        element.textContent = '已複製!';
+        element.style.color = 'var(--accent-color)';
+
+        setTimeout(() => {
+            element.textContent = originalText;
+            element.style.color = '';
+        }, 1000);
+    };
+
+    /**
+     * 專案上下文管理器
+     */
+    function ProjectContextManager() {
+        this.currentProject = this.initializeCurrentProject();
+        this.projectHistory = this.loadProjectHistory();
+    }
+
+    /**
+     * 初始化當前專案
+     */
+    ProjectContextManager.prototype.initializeCurrentProject = function() {
+        // 從頁面獲取專案信息
+        const projectPathElement = document.getElementById('projectPathDisplay');
+        const projectNameElement = document.getElementById('projectNameDisplay');
+
+        const projectPath = projectPathElement ?
+            (projectPathElement.getAttribute('data-full-path') || projectPathElement.textContent) : '';
+        const projectName = projectNameElement ? projectNameElement.textContent : '';
+
+        const project = {
+            name: projectName || this.extractProjectNameFromPath(projectPath),
+            path: projectPath,
+            type: this.detectProjectType(projectPath),
+            agent: this.detectAgentContext(),
+            lastAccessed: new Date().toISOString(),
+            metadata: this.gatherProjectMetadata(projectPath)
+        };
+
+        // 保存到歷史
+        this.addToProjectHistory(project);
+
+        return project;
+    };
+
+    /**
+     * 從路徑提取專案名稱
+     */
+    ProjectContextManager.prototype.extractProjectNameFromPath = function(path) {
+        if (!path) return 'Unknown Project';
+
+        const parts = path.replace(/\\/g, '/').split('/');
+        return parts[parts.length - 1] || parts[parts.length - 2] || 'Unknown Project';
+    };
+
+    /**
+     * 檢測專案類型
+     */
+    ProjectContextManager.prototype.detectProjectType = function(path) {
+        if (!path) return 'general';
+
+        const pathLower = path.toLowerCase();
+
+        // Web 專案指標
+        if (pathLower.includes('web') || pathLower.includes('frontend') ||
+            pathLower.includes('react') || pathLower.includes('vue') ||
+            pathLower.includes('angular') || pathLower.includes('next')) {
+            return 'web';
+        }
+
+        // Mobile 專案指標
+        if (pathLower.includes('mobile') || pathLower.includes('android') ||
+            pathLower.includes('ios') || pathLower.includes('flutter') ||
+            pathLower.includes('react-native')) {
+            return 'mobile';
+        }
+
+        // Desktop 專案指標
+        if (pathLower.includes('desktop') || pathLower.includes('electron') ||
+            pathLower.includes('tauri') || pathLower.includes('wpf')) {
+            return 'desktop';
+        }
+
+        // API 專案指標
+        if (pathLower.includes('api') || pathLower.includes('backend') ||
+            pathLower.includes('server') || pathLower.includes('service')) {
+            return 'api';
+        }
+
+        // Data 專案指標
+        if (pathLower.includes('data') || pathLower.includes('analytics') ||
+            pathLower.includes('ml') || pathLower.includes('ai')) {
+            return 'data';
+        }
+
+        return 'general';
+    };
+
+    /**
+     * 檢測 Agent 上下文
+     */
+    ProjectContextManager.prototype.detectAgentContext = function() {
+        // 這裡可以從 MCP 調用或其他來源獲取 agent 信息
+        // 目前返回 null，未來可以擴展
+        return null;
+    };
+
+    /**
+     * 收集專案元數據
+     */
+    ProjectContextManager.prototype.gatherProjectMetadata = function(path) {
+        return {
+            detectedAt: new Date().toISOString(),
+            userAgent: navigator.userAgent,
+            sessionId: this.getCurrentSessionId()
+        };
+    };
+
+    /**
+     * 獲取當前會話 ID
+     */
+    ProjectContextManager.prototype.getCurrentSessionId = function() {
+        const sessionElement = document.getElementById('currentSessionId');
+        return sessionElement ? sessionElement.textContent : null;
+    };
+
+    /**
+     * 載入專案歷史
+     */
+    ProjectContextManager.prototype.loadProjectHistory = function() {
+        try {
+            const history = localStorage.getItem('mcp_project_history');
+            return history ? JSON.parse(history) : [];
+        } catch (e) {
+            console.warn('⚠️ 載入專案歷史失敗:', e);
+            return [];
+        }
+    };
+
+    /**
+     * 保存專案歷史
+     */
+    ProjectContextManager.prototype.saveProjectHistory = function() {
+        try {
+            localStorage.setItem('mcp_project_history', JSON.stringify(this.projectHistory));
+        } catch (e) {
+            console.warn('⚠️ 保存專案歷史失敗:', e);
+        }
+    };
+
+    /**
+     * 添加到專案歷史
+     */
+    ProjectContextManager.prototype.addToProjectHistory = function(project) {
+        // 移除重複項目
+        this.projectHistory = this.projectHistory.filter(p => p.path !== project.path);
+
+        // 添加到開頭
+        this.projectHistory.unshift(project);
+
+        // 限制歷史數量
+        if (this.projectHistory.length > 10) {
+            this.projectHistory = this.projectHistory.slice(0, 10);
+        }
+
+        this.saveProjectHistory();
+    };
+
+    /**
+     * 獲取當前專案
+     */
+    ProjectContextManager.prototype.getCurrentProject = function() {
+        return this.currentProject;
+    };
+
+    /**
+     * 獲取專案歷史
+     */
+    ProjectContextManager.prototype.getProjectHistory = function() {
+        return this.projectHistory;
+    };
+
+    /**
+     * 顯示專案詳情模態框
+     */
+    ProjectContextManager.prototype.showProjectDetailsModal = function(projectData) {
+        const modal = this.createProjectDetailsModal(projectData);
+        document.body.appendChild(modal);
+
+        setTimeout(() => {
+            modal.classList.add('show');
+        }, 10);
+    };
+
+    /**
+     * 創建專案詳情模態框
+     */
+    ProjectContextManager.prototype.createProjectDetailsModal = function(projectData) {
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        modal.innerHTML = `
+            <div class="modal-container project-details-modal">
+                <div class="modal-header">
+                    <div class="project-details-header">
+                        <span class="project-details-icon">${this.getProjectIcon(projectData.type)}</span>
+                        <h3 class="project-details-title">${this.escapeHtml(projectData.name)}</h3>
+                    </div>
+                    <button type="button" class="modal-close-btn" aria-label="關閉">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="project-details-content">
+                        ${this.renderProjectDetailsContent(projectData)}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <div class="project-actions">
+                        <button type="button" class="project-action-btn" onclick="this.closest('.modal-overlay').remove()">關閉</button>
+                        <button type="button" class="project-action-btn primary" onclick="navigator.clipboard.writeText('${projectData.path}')">複製路徑</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // 設置事件監聽器
+        this.setupProjectDetailsEvents(modal);
+
+        return modal;
+    };
+
+    /**
+     * 渲染專案詳情內容
+     */
+    ProjectContextManager.prototype.renderProjectDetailsContent = function(projectData) {
+        const history = this.getProjectHistory();
+
+        return `
+            <div class="project-detail-section">
+                <h4><span class="section-icon">📋</span>基本信息</h4>
+                <div class="project-detail-item">
+                    <span class="project-detail-label">專案名稱:</span>
+                    <span class="project-detail-value">${this.escapeHtml(projectData.name)}</span>
+                </div>
+                <div class="project-detail-item">
+                    <span class="project-detail-label">專案類型:</span>
+                    <span class="project-detail-value">${this.getProjectTypeLabel(projectData.type)}</span>
+                </div>
+                <div class="project-detail-item">
+                    <span class="project-detail-label">專案路徑:</span>
+                    <span class="project-detail-value clickable" onclick="navigator.clipboard.writeText('${projectData.path}')" title="點擊複製">${this.escapeHtml(projectData.path)}</span>
+                </div>
+                <div class="project-detail-item">
+                    <span class="project-detail-label">最後訪問:</span>
+                    <span class="project-detail-value">${this.formatDate(projectData.lastAccessed)}</span>
+                </div>
+            </div>
+
+            <div class="project-detail-section">
+                <h4><span class="section-icon">🕒</span>專案歷史</h4>
+                <div class="project-history-list">
+                    ${this.renderProjectHistory(history, projectData.path)}
+                </div>
+            </div>
+
+            ${projectData.agent ? `
+            <div class="project-detail-section">
+                <h4><span class="section-icon">🤖</span>Agent 上下文</h4>
+                <div class="project-detail-item">
+                    <span class="project-detail-label">Agent 名稱:</span>
+                    <span class="project-detail-value">${this.escapeHtml(projectData.agent.name)}</span>
+                </div>
+            </div>
+            ` : ''}
+        `;
+    };
+
+    /**
+     * 渲染專案歷史
+     */
+    ProjectContextManager.prototype.renderProjectHistory = function(history, currentPath) {
+        if (!history || history.length === 0) {
+            return '<div style="text-align: center; color: var(--text-secondary); padding: 20px;">尚無專案歷史</div>';
+        }
+
+        return history.map(project => {
+            const isCurrent = project.path === currentPath;
+            return `
+                <div class="project-history-item ${isCurrent ? 'current' : ''}" onclick="this.selectProject('${project.path}')">
+                    <span class="project-history-icon">${this.getProjectIcon(project.type)}</span>
+                    <div class="project-history-info">
+                        <div class="project-history-name">${this.escapeHtml(project.name)}</div>
+                        <div class="project-history-path">${this.escapeHtml(project.path)}</div>
+                    </div>
+                    <div class="project-history-time">${this.formatRelativeTime(project.lastAccessed)}</div>
+                </div>
+            `;
+        }).join('');
+    };
+
+    /**
+     * 設置專案詳情事件
+     */
+    ProjectContextManager.prototype.setupProjectDetailsEvents = function(modal) {
+        // 關閉按鈕
+        const closeBtn = modal.querySelector('.modal-close-btn');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                this.closeProjectDetailsModal(modal);
+            });
+        }
+
+        // 點擊背景關閉
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                this.closeProjectDetailsModal(modal);
+            }
+        });
+
+        // ESC 鍵關閉
+        document.addEventListener('keydown', function escapeHandler(e) {
+            if (e.key === 'Escape') {
+                this.closeProjectDetailsModal(modal);
+                document.removeEventListener('keydown', escapeHandler);
+            }
+        }.bind(this));
+    };
+
+    /**
+     * 關閉專案詳情模態框
+     */
+    ProjectContextManager.prototype.closeProjectDetailsModal = function(modal) {
+        modal.classList.remove('show');
+        setTimeout(() => {
+            if (modal.parentNode) {
+                modal.parentNode.removeChild(modal);
+            }
+        }, 300);
+    };
+
+    /**
+     * 輔助方法
+     */
+    ProjectContextManager.prototype.getProjectIcon = function(type) {
+        const icons = {
+            'web': '🌐',
+            'mobile': '📱',
+            'desktop': '🖥️',
+            'api': '🔌',
+            'data': '📊',
+            'general': '📂'
+        };
+        return icons[type] || icons.general;
+    };
+
+    ProjectContextManager.prototype.getProjectTypeLabel = function(type) {
+        const labels = {
+            'web': 'Web 應用',
+            'mobile': '移動應用',
+            'desktop': '桌面應用',
+            'api': 'API 服務',
+            'data': '數據項目',
+            'general': '通用項目'
+        };
+        return labels[type] || labels.general;
+    };
+
+    ProjectContextManager.prototype.escapeHtml = function(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    };
+
+    ProjectContextManager.prototype.formatDate = function(dateString) {
+        if (!dateString) return '未知';
+        try {
+            return new Date(dateString).toLocaleString('zh-TW');
+        } catch (e) {
+            return '未知';
+        }
+    };
+
+    ProjectContextManager.prototype.formatRelativeTime = function(dateString) {
+        if (!dateString) return '未知';
+        try {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diff = now - date;
+            const minutes = Math.floor(diff / 60000);
+            const hours = Math.floor(minutes / 60);
+            const days = Math.floor(hours / 24);
+
+            if (days > 0) return `${days}天前`;
+            if (hours > 0) return `${hours}小時前`;
+            if (minutes > 0) return `${minutes}分鐘前`;
+            return '剛剛';
+        } catch (e) {
+            return '未知';
+        }
     };
 
     // 將 SessionManager 加入命名空間

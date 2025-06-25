@@ -1507,6 +1507,111 @@ textarea::placeholder,
     opacity: 0.7 !important;
 }
 
+/* ===== 智能滾動新訊息指示器 ===== */
+
+.new-message-indicator {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    background: var(--accent-color);
+    color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+    transform: translateY(-100px);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.new-message-indicator.visible {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.new-message-indicator.hidden {
+    transform: translateY(-100px);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.indicator-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.indicator-icon {
+    font-size: 16px;
+}
+
+.indicator-text {
+    flex: 1;
+    white-space: nowrap;
+}
+
+.scroll-to-top-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    border-radius: 4px;
+    color: white;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
+    transition: background 0.2s ease;
+}
+
+.scroll-to-top-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.scroll-to-top-btn:active {
+    transform: scale(0.95);
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+    .new-message-indicator {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        right: 10px;
+    }
+
+    .indicator-content {
+        padding: 10px 12px;
+        font-size: 13px;
+    }
+
+    .indicator-icon {
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 480px) {
+    .new-message-indicator {
+        top: 5px;
+        left: 5px;
+        right: 5px;
+    }
+
+    .indicator-content {
+        padding: 8px 10px;
+        font-size: 12px;
+    }
+
+    .scroll-to-top-btn {
+        padding: 3px 6px;
+        font-size: 11px;
+    }
+}
+
 /* 跨瀏覽器兼容的 placeholder 樣式 */
 textarea::-webkit-input-placeholder,
 #combinedFeedbackText::-webkit-input-placeholder {
@@ -2339,5 +2444,458 @@ textarea:-ms-input-placeholder,
 
 #summaryContent td > *:last-child, #combinedSummaryContent td > *:last-child {
     margin-bottom: 0 !important;
+}
+
+/* ===== 規則管理 UI 樣式 ===== */
+
+.rules-manager {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: var(--bg-primary);
+}
+
+.rules-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.rules-header h3 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 18px;
+}
+
+.rules-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.rules-actions .btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    font-size: 14px;
+}
+
+.rules-content {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+}
+
+.rules-sidebar {
+    width: 350px;
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border-color);
+    overflow-y: auto;
+}
+
+.rules-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-primary);
+}
+
+.rule-editor {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.rule-test-panel {
+    border-top: 1px solid var(--border-color);
+    padding: 20px;
+    background: var(--bg-secondary);
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+/* 手風琴樣式 */
+.rules-accordion {
+    padding: 10px;
+}
+
+.accordion-group {
+    margin-bottom: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-tertiary);
+}
+
+.accordion-header {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    user-select: none;
+}
+
+.accordion-header:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.accordion-group.expanded .accordion-header {
+    background: rgba(0, 122, 204, 0.1);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.group-icon {
+    font-size: 16px;
+    margin-right: 8px;
+}
+
+.group-name {
+    flex: 1;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.group-count {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-right: 8px;
+}
+
+.accordion-toggle {
+    font-size: 12px;
+    color: var(--text-secondary);
+    transition: transform 0.2s ease;
+}
+
+.accordion-group.expanded .accordion-toggle {
+    transform: rotate(180deg);
+}
+
+.accordion-content {
+    display: none;
+    padding: 8px;
+}
+
+.accordion-group.expanded .accordion-content {
+    display: block;
+}
+
+/* 規則項目樣式 */
+.rule-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    margin-bottom: 6px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.rule-item:hover {
+    border-color: var(--accent-color);
+    box-shadow: 0 2px 4px rgba(0, 122, 204, 0.1);
+}
+
+.rule-item.selected {
+    border-color: var(--accent-color);
+    background: rgba(0, 122, 204, 0.1);
+}
+
+.rule-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.rule-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+}
+
+.rule-status {
+    font-size: 12px;
+}
+
+.rule-type-icon {
+    font-size: 14px;
+}
+
+.rule-name {
+    font-weight: 500;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.rule-details {
+    display: flex;
+    gap: 12px;
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+.rule-actions {
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.rule-item:hover .rule-actions {
+    opacity: 1;
+}
+
+.btn-icon {
+    background: none;
+    border: none;
+    padding: 4px;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: background 0.2s ease;
+    font-size: 14px;
+}
+
+.btn-icon:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* 編輯器樣式 */
+.editor-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-secondary);
+    text-align: center;
+}
+
+.placeholder-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.placeholder-text {
+    font-size: 16px;
+    max-width: 300px;
+    line-height: 1.5;
+}
+
+.editor-content {
+    max-width: 800px;
+}
+
+.editor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.editor-header h4 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 18px;
+}
+
+.editor-actions {
+    display: flex;
+    gap: 10px;
+}
+
+/* 表單樣式 */
+.rule-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-group label {
+    font-weight: 500;
+    color: var(--text-primary);
+    font-size: 14px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-size: 14px;
+    transition: border-color 0.2s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.1);
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 80px;
+    font-family: 'Courier New', monospace;
+}
+
+/* 專案篩選樣式 */
+.project-filter-section {
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 16px;
+    background: var(--bg-tertiary);
+}
+
+.filter-type-selector {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.filter-type-selector label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.filter-type-selector input[type="radio"] {
+    margin: 0;
+}
+
+.filter-patterns {
+    display: none;
+}
+
+.filter-patterns textarea {
+    width: 100%;
+    min-height: 80px;
+    font-family: 'Courier New', monospace;
+}
+
+/* 測試面板樣式 */
+.rule-test-panel h4 {
+    margin: 0 0 16px 0;
+    color: var(--text-primary);
+    font-size: 16px;
+}
+
+.test-inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 16px;
+    align-items: end;
+    margin-bottom: 16px;
+}
+
+.test-inputs .input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.test-inputs label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.test-inputs input,
+.test-inputs select {
+    padding: 8px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-size: 14px;
+}
+
+.btn-test {
+    background: var(--warning-color, #ff9800);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s ease;
+}
+
+.btn-test:hover {
+    background: #e68900;
+}
+
+.test-results {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 16px;
+    min-height: 100px;
+}
+
+.test-result h5 {
+    margin: 0 0 12px 0;
+    color: var(--text-primary);
+    font-size: 14px;
+}
+
+.test-result p {
+    margin: 4px 0;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+    .rules-content {
+        flex-direction: column;
+    }
+
+    .rules-sidebar {
+        width: 100%;
+        max-height: 300px;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .test-inputs {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .filter-type-selector {
+        grid-template-columns: 1fr;
+    }
 }
 

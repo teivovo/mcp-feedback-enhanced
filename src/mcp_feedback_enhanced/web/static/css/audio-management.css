@@ -572,3 +572,238 @@
         transform: translateY(0) scale(1);
     }
 }
+
+/* ===== 音效權限對話框樣式 ===== */
+
+.audio-permission-dialog-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.audio-permission-dialog-overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.audio-permission-dialog {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    max-width: 500px;
+    width: 90%;
+    transform: scale(0.9);
+    transition: transform 0.3s ease;
+}
+
+.audio-permission-dialog-overlay.show .audio-permission-dialog {
+    transform: scale(1);
+}
+
+.audio-permission-dialog .dialog-header {
+    padding: 20px 20px 0 20px;
+    text-align: center;
+}
+
+.audio-permission-dialog .dialog-header h3 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.audio-permission-dialog .dialog-body {
+    padding: 20px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.audio-permission-dialog .dialog-body p {
+    margin: 0 0 16px 0;
+}
+
+.audio-permission-dialog .dialog-body ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.audio-permission-dialog .dialog-body li {
+    margin-bottom: 8px;
+}
+
+.audio-permission-dialog .dialog-actions {
+    padding: 0 20px 20px 20px;
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.audio-permission-dialog .btn {
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+}
+
+.audio-permission-dialog .btn-primary {
+    background: var(--accent-color);
+    color: white;
+}
+
+.audio-permission-dialog .btn-primary:hover {
+    background: #005a9e;
+}
+
+.audio-permission-dialog .btn-secondary {
+    background: var(--text-secondary);
+    color: white;
+}
+
+.audio-permission-dialog .btn-secondary:hover {
+    background: #7e7e7e;
+}
+
+/* ===== 音效權限指示器樣式 ===== */
+
+.audio-permission-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+}
+
+.audio-permission-indicator.enabled {
+    background: rgba(76, 175, 80, 0.1);
+    border-color: #4caf50;
+    color: #4caf50;
+}
+
+.audio-permission-indicator.fallback {
+    background: rgba(255, 152, 0, 0.1);
+    border-color: #ff9800;
+    color: #ff9800;
+}
+
+.audio-permission-indicator.disabled {
+    background: rgba(158, 158, 158, 0.1);
+    border-color: var(--text-secondary);
+    color: var(--text-secondary);
+}
+
+.audio-permission-indicator .indicator-content {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.audio-permission-indicator .indicator-icon {
+    font-size: 14px;
+}
+
+.audio-permission-indicator .indicator-status {
+    font-weight: 500;
+}
+
+.audio-permission-indicator .enable-audio-btn {
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.audio-permission-indicator .enable-audio-btn:hover {
+    background: #005a9e;
+}
+
+/* ===== 備用通知指示器樣式 ===== */
+
+.audio-fallback-indicator {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    z-index: 1500;
+    background: var(--accent-color);
+    color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    transform: translateX(100%);
+    opacity: 0;
+    transition: all 0.3s ease;
+}
+
+.audio-fallback-indicator.show {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.audio-fallback-indicator .indicator-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.audio-fallback-indicator .indicator-icon {
+    font-size: 16px;
+}
+
+/* ===== 響應式設計 ===== */
+
+@media (max-width: 768px) {
+    .audio-permission-dialog {
+        width: 95%;
+        margin: 20px;
+    }
+
+    .audio-permission-dialog .dialog-actions {
+        flex-direction: column;
+    }
+
+    .audio-permission-dialog .btn {
+        width: 100%;
+    }
+
+    .audio-fallback-indicator {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        transform: translateY(-100%);
+    }
+
+    .audio-fallback-indicator.show {
+        transform: translateY(0);
+    }
+
+    .audio-permission-indicator {
+        font-size: 11px;
+        padding: 4px 8px;
+    }
+
+    .audio-permission-indicator .indicator-icon {
+        font-size: 12px;
+    }
+}

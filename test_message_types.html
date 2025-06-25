@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Message Type System Test</title>
+    <link rel="stylesheet" href="src/mcp_feedback_enhanced/web/static/css/styles.css">
+    <link rel="stylesheet" href="src/mcp_feedback_enhanced/web/static/css/session-management.css">
+    <style>
+        :root {
+            --bg-primary: #1e1e1e;
+            --bg-secondary: #2d2d30;
+            --bg-tertiary: #3e3e42;
+            --text-primary: #cccccc;
+            --text-secondary: #9e9e9e;
+            --accent-color: #007acc;
+            --border-color: #464647;
+        }
+        
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .test-header {
+            background: var(--bg-secondary);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .test-controls {
+            background: rgba(0, 122, 204, 0.1);
+            border: 1px solid var(--accent-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .control-group {
+            margin-bottom: 15px;
+        }
+        
+        .btn {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 8px;
+            font-size: 14px;
+            transition: background 0.2s ease;
+        }
+        
+        .btn:hover {
+            background: #005a9e;
+        }
+        
+        .btn-secondary {
+            background: var(--text-secondary);
+        }
+        
+        .btn-secondary:hover {
+            background: #7e7e7e;
+        }
+        
+        .demo-header {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 20px;
+            padding: 20px;
+        }
+        
+        .status-display {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .status-item:last-child {
+            border-bottom: none;
+        }
+        
+        .status-label {
+            font-weight: 500;
+        }
+        
+        .status-value {
+            color: var(--text-secondary);
+            font-family: monospace;
+        }
+        
+        .feature-list {
+            background: rgba(76, 175, 80, 0.1);
+            border: 1px solid #4caf50;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .feature-list h3 {
+            color: #4caf50;
+            margin-top: 0;
+        }
+        
+        .message-type-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .message-type-card {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .message-type-card:hover {
+            border-color: var(--accent-color);
+            box-shadow: 0 2px 8px rgba(0, 122, 204, 0.1);
+        }
+        
+        .message-type-card.active {
+            border-color: var(--accent-color);
+            background: rgba(0, 122, 204, 0.1);
+        }
+        
+        .message-type-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .message-type-icon {
+            font-size: 20px;
+        }
+        
+        .message-type-name {
+            font-weight: 600;
+            font-size: 16px;
+        }
+        
+        .message-type-description {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        
+        .message-type-settings {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-header">
+            <h1>🏷️ Message Type System Test</h1>
+            <p>This test demonstrates the MCP protocol extension for message types, enabling configurable rules and behaviors based on message types.</p>
+        </div>
+        
+        <div class="test-controls">
+            <h3>🎮 Test Controls</h3>
+            
+            <div class="control-group">
+                <strong>Quick Message Types:</strong><br>
+                <button class="btn" onclick="setMessageType('general')">💬 General</button>
+                <button class="btn" onclick="setMessageType('code_review')">🔍 Code Review</button>
+                <button class="btn" onclick="setMessageType('error_report')">🐛 Error Report</button>
+                <button class="btn" onclick="setMessageType('feature_request')">✨ Feature Request</button>
+                <button class="btn btn-secondary" onclick="resetMessageType()">🔄 Reset</button>
+            </div>
+            
+            <div class="control-group">
+                <strong>Advanced Types:</strong><br>
+                <button class="btn" onclick="setMessageType('documentation')">📚 Documentation</button>
+                <button class="btn" onclick="setMessageType('testing')">🧪 Testing</button>
+                <button class="btn" onclick="setMessageType('deployment')">🚀 Deployment</button>
+                <button class="btn" onclick="setMessageType('security')">🔒 Security</button>
+            </div>
+            
+            <div class="control-group">
+                <strong>Actions:</strong><br>
+                <button class="btn" onclick="simulateWebSocketMessage()">📡 Simulate WebSocket Message</button>
+                <button class="btn" onclick="testValidation()">✅ Test Validation</button>
+                <button class="btn" onclick="showAllMetadata()">📋 Show All Metadata</button>
+            </div>
+        </div>
+        
+        <!-- Demo Header with Message Type Indicator -->
+        <div class="demo-header">
+            <h3>📊 Current Message Type Display</h3>
+            <div class="project-status-indicators">
+                <div class="project-type-indicator">
+                    <span class="indicator-icon">🔧</span>
+                    <span class="indicator-text">General Project</span>
+                </div>
+                <div class="message-type-indicator" id="messageTypeIndicator">
+                    <span class="message-type-icon">💬</span>
+                    <span class="message-type-name">一般訊息</span>
+                </div>
+                <div class="agent-context-indicator active">
+                    <span class="indicator-icon">🤖</span>
+                    <span class="indicator-text">Claude Sonnet</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="status-display">
+            <h3>📊 System Status</h3>
+            <div class="status-item">
+                <span class="status-label">Current Message Type:</span>
+                <span class="status-value" id="currentMessageType">general</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Type Name:</span>
+                <span class="status-value" id="currentTypeName">一般訊息</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Auto Submit Default:</span>
+                <span class="status-value" id="autoSubmitDefault">false</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Timeout Default:</span>
+                <span class="status-value" id="timeoutDefault">600s</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Color:</span>
+                <span class="status-value" id="typeColor">#007acc</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Validation Status:</span>
+                <span class="status-value" id="validationStatus">✅ Valid</span>
+            </div>
+        </div>
+        
+        <div class="message-type-grid" id="messageTypeGrid">
+            <!-- Message type cards will be populated by JavaScript -->
+        </div>
+        
+        <div class="feature-list">
+            <h3>✨ Message Type System Features</h3>
+            <ul>
+                <li><strong>🏷️ Eight Message Types:</strong> General, Code Review, Error Report, Feature Request, Documentation, Testing, Deployment, Security</li>
+                <li><strong>📊 Rich Metadata:</strong> Each type has name, icon, color, description, and default settings</li>
+                <li><strong>🔧 Configurable Behavior:</strong> Auto-submit defaults and timeout settings per type</li>
+                <li><strong>✅ Type Validation:</strong> Built-in validation for message type values</li>
+                <li><strong>📡 WebSocket Integration:</strong> Real-time message type updates via WebSocket</li>
+                <li><strong>🎨 Visual Indicators:</strong> Color-coded indicators with unique icons</li>
+                <li><strong>🔄 Dynamic Updates:</strong> Live UI updates when message type changes</li>
+                <li><strong>📋 Metadata Access:</strong> Easy access to type-specific configuration</li>
+                <li><strong>🔗 Callback System:</strong> Event-driven architecture for type changes</li>
+                <li><strong>🌐 Backward Compatible:</strong> Maintains compatibility with existing MCP calls</li>
+            </ul>
+        </div>
+        
+        <div style="background: rgba(255, 152, 0, 0.1); border: 1px solid #ff9800; border-radius: 8px; padding: 20px; margin-top: 20px;">
+            <h3 style="color: #ff9800; margin-top: 0;">🧪 Test Instructions</h3>
+            <ol>
+                <li><strong>Message Type Selection:</strong> Click different message type buttons to see visual changes</li>
+                <li><strong>Visual Feedback:</strong> Notice how the indicator changes color, icon, and text</li>
+                <li><strong>Status Monitoring:</strong> Watch the status display update with type metadata</li>
+                <li><strong>Card Interface:</strong> Click message type cards to select different types</li>
+                <li><strong>WebSocket Simulation:</strong> Test WebSocket message handling</li>
+                <li><strong>Validation Testing:</strong> Test type validation with valid and invalid values</li>
+                <li><strong>Metadata Display:</strong> View all available message type metadata</li>
+                <li><strong>Responsive Design:</strong> Resize window to test responsive behavior</li>
+            </ol>
+        </div>
+    </div>
+
+    <!-- Load the message type manager -->
+    <script src="src/mcp_feedback_enhanced/web/static/js/modules/message-type-manager.js"></script>
+    
+    <script>
+        // Mock WebSocket manager for testing
+        window.MCPFeedback = window.MCPFeedback || {};
+        
+        // Test functions
+        function setMessageType(type) {
+            console.log('🏷️ Setting message type to:', type);
+            if (window.MCPFeedback.MessageTypeManager) {
+                window.MCPFeedback.MessageTypeManager.updateMessageType(type);
+                updateStatusDisplay();
+            }
+        }
+        
+        function resetMessageType() {
+            setMessageType('general');
+        }
+        
+        function updateStatusDisplay() {
+            const manager = window.MCPFeedback.MessageTypeManager;
+            if (!manager) return;
+            
+            const currentType = manager.getCurrentMessageType();
+            const metadata = manager.getMessageTypeMetadata(currentType);
+            
+            document.getElementById('currentMessageType').textContent = currentType;
+            document.getElementById('currentTypeName').textContent = metadata.name;
+            document.getElementById('autoSubmitDefault').textContent = metadata.autoSubmitDefault;
+            document.getElementById('timeoutDefault').textContent = metadata.timeoutDefault + 's';
+            document.getElementById('typeColor').textContent = metadata.color;
+            document.getElementById('typeColor').style.color = metadata.color;
+            
+            // Update validation status
+            const isValid = manager.isValidMessageType(currentType);
+            document.getElementById('validationStatus').textContent = isValid ? '✅ Valid' : '❌ Invalid';
+            
+            // Update active card
+            updateActiveCard(currentType);
+        }
+        
+        function updateActiveCard(activeType) {
+            const cards = document.querySelectorAll('.message-type-card');
+            cards.forEach(card => {
+                if (card.dataset.type === activeType) {
+                    card.classList.add('active');
+                } else {
+                    card.classList.remove('active');
+                }
+            });
+        }
+        
+        function simulateWebSocketMessage() {
+            const types = ['general', 'code_review', 'error_report', 'feature_request'];
+            const randomType = types[Math.floor(Math.random() * types.length)];
+            
+            console.log('📡 Simulating WebSocket message with type:', randomType);
+            
+            // Simulate WebSocket message
+            const mockMessage = {
+                type: 'message_type_update',
+                message_type: randomType
+            };
+            
+            if (window.MCPFeedback.MessageTypeManager) {
+                window.MCPFeedback.MessageTypeManager.updateMessageType(randomType);
+                updateStatusDisplay();
+            }
+            
+            alert(`📡 Simulated WebSocket message:\nType: ${randomType}`);
+        }
+        
+        function testValidation() {
+            const manager = window.MCPFeedback.MessageTypeManager;
+            if (!manager) return;
+            
+            const testCases = [
+                'general',
+                'code_review',
+                'invalid_type',
+                'error_report',
+                'nonexistent',
+                'security'
+            ];
+            
+            const results = testCases.map(type => ({
+                type: type,
+                valid: manager.isValidMessageType(type)
+            }));
+            
+            console.log('✅ Validation test results:', results);
+            
+            const resultText = results.map(r => 
+                `${r.type}: ${r.valid ? '✅' : '❌'}`
+            ).join('\n');
+            
+            alert(`✅ Validation Test Results:\n\n${resultText}`);
+        }
+        
+        function showAllMetadata() {
+            const manager = window.MCPFeedback.MessageTypeManager;
+            if (!manager) return;
+            
+            const allTypes = manager.getAllMessageTypes();
+            console.log('📋 All message type metadata:', allTypes);
+            
+            const metadataText = allTypes.map(type => 
+                `${type.icon} ${type.name}\n  Type: ${type.type}\n  Auto-submit: ${type.autoSubmitDefault}\n  Timeout: ${type.timeoutDefault}s`
+            ).join('\n\n');
+            
+            alert(`📋 All Message Type Metadata:\n\n${metadataText}`);
+        }
+        
+        function createMessageTypeCards() {
+            const manager = window.MCPFeedback.MessageTypeManager;
+            if (!manager) return;
+            
+            const grid = document.getElementById('messageTypeGrid');
+            const allTypes = manager.getAllMessageTypes();
+            
+            grid.innerHTML = allTypes.map(type => `
+                <div class="message-type-card" data-type="${type.type}" onclick="setMessageType('${type.type}')">
+                    <div class="message-type-header">
+                        <span class="message-type-icon">${type.icon}</span>
+                        <span class="message-type-name">${type.name}</span>
+                    </div>
+                    <div class="message-type-description">${type.description}</div>
+                    <div class="message-type-settings">
+                        <span>Auto-submit: ${type.autoSubmitDefault}</span>
+                        <span>Timeout: ${type.timeoutDefault}s</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // Initialize when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🏷️ Message Type System Test initialized');
+            
+            // Wait for MessageTypeManager to be available
+            setTimeout(() => {
+                if (window.MCPFeedback.MessageTypeManager) {
+                    createMessageTypeCards();
+                    updateStatusDisplay();
+                    
+                    // Add type change callback
+                    window.MCPFeedback.MessageTypeManager.addTypeChangeCallback((newType, oldType) => {
+                        console.log('🔄 Message type changed:', oldType, '->', newType);
+                        updateStatusDisplay();
+                    });
+                } else {
+                    console.error('❌ MessageTypeManager not available');
+                }
+            }, 100);
+        });
+    </script>
+</body>
+</html>

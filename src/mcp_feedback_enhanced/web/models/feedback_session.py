@@ -120,12 +120,14 @@ class WebFeedbackSession:
         session_id: str,
         project_directory: str,
         summary: str,
+        message_type: str = "general",
         auto_cleanup_delay: int = 3600,
         max_idle_time: int = 1800,
     ):
         self.session_id = session_id
         self.project_directory = project_directory
         self.summary = summary
+        self.message_type = message_type
         self.websocket: WebSocket | None = None
         self.feedback_result: str | None = None
         self.images: list[dict] = []

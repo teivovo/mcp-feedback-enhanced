@@ -397,70 +397,122 @@
             <div class="app-title">
                 <h1 data-i18n="app.title">MCP Feedback Enhanced</h1>
             </div>
-            <div class="project-info">
-                📂 <span data-i18n="app.projectDirectory">專案目錄</span>:
-                <span id="projectPathDisplay" class="project-path-display"
-                      data-full-path="{{ project_directory }}"
-                      data-i18n-title="app.clickToCopyPath"
-                      title="點擊複製完整路徑">{{ project_directory }}</span>
+            <div class="project-context-container">
+                <div class="project-info-main">
+                    <div class="project-name-section">
+                        <span class="project-icon" id="projectIcon">📂</span>
+                        <span class="project-name" id="projectName" data-i18n-title="projectContext.clickForDetails" title="點擊查看專案詳情">
+                            <span id="projectNameDisplay">{{ project_name or 'Unknown Project' }}</span>
+                        </span>
+                        <button class="project-details-btn" id="projectDetailsBtn" data-i18n-title="projectContext.showDetails" title="顯示專案詳情">
+                            <span>ℹ️</span>
+                        </button>
+                    </div>
+                    <div class="project-path-section">
+                        <span class="project-path-label" data-i18n="app.projectDirectory">專案目錄</span>:
+                        <span id="projectPathDisplay" class="project-path-display"
+                              data-full-path="{{ project_directory }}"
+                              data-i18n-title="app.clickToCopyPath"
+                              title="點擊複製完整路徑">{{ project_directory }}</span>
+                    </div>
+                </div>
+                <div class="project-status-indicators">
+                    <div class="project-type-indicator" id="projectTypeIndicator">
+                        <span class="indicator-icon">🔧</span>
+                        <span class="indicator-text" id="projectTypeText">General</span>
+                    </div>
+                    <div class="message-type-indicator" id="messageTypeIndicator">
+                        <span class="message-type-icon">💬</span>
+                        <span class="message-type-name">一般訊息</span>
+                    </div>
+                    <div class="agent-context-indicator" id="agentContextIndicator" style="display: none;">
+                        <span class="indicator-icon">🤖</span>
+                        <span class="indicator-text" id="agentContextText">Agent</span>
+                    </div>
+                </div>
             </div>
         </div>
 
         <!-- 中間：連線狀態資訊 -->
         <div class="connection-status-group">
-            <!-- 左側：會話狀態資訊 -->
-            <div class="session-status-info">
-                <div class="current-session-info">
-                    <span class="session-indicator">
-                        📋 <span data-i18n="sessionManagement.currentSession">當前會話</span>:
-                        <span id="currentSessionId" class="session-id-display"
-                              data-full-id="{{ session_id if session_id else 'loading' }}"
-                              data-i18n-title="app.clickToCopySessionId"
-                              title="點擊複製完整會話ID">{{ session_id[:8] if session_id else 'loading' }}...</span>
-                    </span>
-                    <span class="session-age">
-                        <span data-i18n="sessionManagement.activeTime">活躍時間</span>: <span id="sessionAge">--</span>
-                    </span>
-                </div>
-            </div>
-
-            <!-- 倒數計時器顯示 -->
-            <div id="countdownDisplay" class="countdown-display" style="display: none;">
-                <span class="countdown-label" data-i18n="autoSubmit.countdownLabel">提交倒數</span>
-                <span id="countdownTimer" class="countdown-timer">--:--</span>
-            </div>
-
-            <!-- 主要連線狀態 -->
-            <div class="connection-indicator connecting" id="mainConnectionStatus">
-                <div class="status-icon pulse"></div>
-                <span class="status-text" data-i18n="connectionMonitor.connecting">連接中...</span>
-                <div class="connection-quality">
-                    <div class="latency-indicator"><span data-i18n="connectionMonitor.latency">延遲</span>: --ms</div>
-                    <div class="signal-strength">
-                        <div class="signal-bar"></div>
-                        <div class="signal-bar"></div>
-                        <div class="signal-bar"></div>
+            <!-- Essential: 基本會話和連線狀態 -->
+            <div class="essential-status">
+                <!-- 會話狀態資訊 -->
+                <div class="session-status-info">
+                    <div class="current-session-info">
+                        <span class="session-indicator">
+                            📋 <span data-i18n="sessionManagement.currentSession">當前會話</span>:
+                            <span id="currentSessionId" class="session-id-display"
+                                  data-full-id="{{ session_id if session_id else 'loading' }}"
+                                  data-i18n-title="app.clickToCopySessionId"
+                                  title="點擊複製完整會話ID">{{ session_id[:8] if session_id else 'loading' }}...</span>
+                        </span>
                     </div>
                 </div>
-            </div>
 
-            <!-- 連線和狀態資訊組合 -->
-            <div class="connection-status-combined">
-                <!-- 連線詳細資訊 -->
-                <div class="connection-details">
-                    <span class="connection-time"><span data-i18n="connectionMonitor.connectionTime">連線時間</span>: --:--</span>
-                    <span class="reconnect-count"><span data-i18n="connectionMonitor.reconnectCount">重連</span>: 0 <span data-i18n="connectionMonitor.times">次</span></span>
+                <!-- 倒數計時器顯示 -->
+                <div id="countdownDisplay" class="countdown-display" style="display: none;">
+                    <span class="countdown-label" data-i18n="autoSubmit.countdownLabel">提交倒數</span>
+                    <span id="countdownTimer" class="countdown-timer">--:--</span>
                 </div>
 
-                <!-- 詳細狀態資訊 -->
-                <div class="detailed-status-info">
-                    <div class="websocket-metrics">
-                        <span class="metric"><span data-i18n="connectionMonitor.metrics.messages">訊息</span>: <span id="messageCount">0</span></span>
-                        <span class="metric"><span data-i18n="connectionMonitor.metrics.latencyMs">延遲</span>: <span id="latencyDisplay">--ms</span></span>
+                <!-- 主要連線狀態 -->
+                <div class="connection-indicator connecting" id="mainConnectionStatus">
+                    <div class="status-icon pulse"></div>
+                    <span class="status-text" data-i18n="connectionMonitor.connecting">連接中...</span>
+                </div>
+            </div>
+
+            <!-- Debug Panel Toggle Button -->
+            <div class="debug-toggle-container">
+                <button id="debugToggleBtn" class="debug-toggle-btn"
+                        data-i18n-title="debug.togglePanel"
+                        title="切換除錯面板">
+                    <span class="debug-icon">🔧</span>
+                    <span class="debug-label hide-xs" data-i18n="debug.debugInfo">除錯資訊</span>
+                    <span class="toggle-arrow">▼</span>
+                </button>
+            </div>
+
+            <!-- Debug Panel (Collapsible) -->
+            <div id="debugPanel" class="debug-panel collapsed">
+                <div class="debug-content">
+                    <!-- 會話詳細資訊 -->
+                    <div class="debug-section">
+                        <div class="debug-section-title" data-i18n="debug.sessionDetails">會話詳細</div>
+                        <div class="debug-metrics">
+                            <span class="session-age">
+                                <span data-i18n="sessionManagement.activeTime">活躍時間</span>: <span id="sessionAge">--</span>
+                            </span>
+                            <span class="metric"><span data-i18n="connectionMonitor.metrics.sessions">會話</span>: <span id="sessionCount">1</span></span>
+                            <span class="metric"><span data-i18n="connectionMonitor.statusText">狀態</span>: <span id="sessionStatusText" data-i18n="connectionMonitor.waiting">等待中</span></span>
+                        </div>
                     </div>
-                    <div class="session-metrics">
-                        <span class="metric"><span data-i18n="connectionMonitor.metrics.sessions">會話</span>: <span id="sessionCount">1</span></span>
-                        <span class="metric"><span data-i18n="connectionMonitor.statusText">狀態</span>: <span id="sessionStatusText" data-i18n="connectionMonitor.waiting">等待中</span></span>
+
+                    <!-- 連線詳細資訊 -->
+                    <div class="debug-section">
+                        <div class="debug-section-title" data-i18n="debug.connectionDetails">連線詳細</div>
+                        <div class="debug-metrics">
+                            <span class="connection-time"><span data-i18n="connectionMonitor.connectionTime">連線時間</span>: --:--</span>
+                            <span class="reconnect-count"><span data-i18n="connectionMonitor.reconnectCount">重連</span>: 0 <span data-i18n="connectionMonitor.times">次</span></span>
+                            <div class="connection-quality">
+                                <div class="latency-indicator"><span data-i18n="connectionMonitor.latency">延遲</span>: --ms</div>
+                                <div class="signal-strength">
+                                    <div class="signal-bar"></div>
+                                    <div class="signal-bar"></div>
+                                    <div class="signal-bar"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- WebSocket 指標 -->
+                    <div class="debug-section">
+                        <div class="debug-section-title" data-i18n="debug.websocketMetrics">WebSocket 指標</div>
+                        <div class="debug-metrics">
+                            <span class="metric"><span data-i18n="connectionMonitor.metrics.messages">訊息</span>: <span id="messageCount">0</span></span>
+                            <span class="metric"><span data-i18n="connectionMonitor.metrics.latencyMs">延遲</span>: <span id="latencyDisplay">--ms</span></span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -498,6 +550,9 @@
                     </button>
                     <button class="tab-button" data-tab="settings" data-i18n="tabs.settings">
                         ⚙️ 設定
+                    </button>
+                    <button class="tab-button" data-tab="rules" data-i18n="tabs.rules">
+                        🔧 規則管理
                     </button>
                     <button class="tab-button" data-tab="about" data-i18n="tabs.about">
                         ℹ️ 關於
@@ -1139,6 +1194,13 @@
                 </div>
             </div>
 
+            <!-- 規則管理分頁 -->
+            <div id="tab-rules" class="tab-content">
+                <div id="rulesManagerContainer">
+                    <!-- 規則管理器將在這裡初始化 -->
+                </div>
+            </div>
+
             <!-- 關於分頁 -->
             <div id="tab-about" class="tab-content">
                 <!-- 主要資訊卡片 -->
@@ -1253,6 +1315,7 @@
 
     <!-- 其他模組 -->
     <script src="/static/js/modules/utils.js?v=2025010510"></script>
+    <script src="/static/js/modules/message-type-manager.js?v=2025010510"></script>
     <script src="/static/js/modules/tab-manager.js?v=2025010510"></script>
     <script src="/static/js/modules/websocket-manager.js?v=2025010510"></script>
     <script src="/static/js/modules/connection-monitor.js?v=2025010510"></script>
@@ -1260,6 +1323,7 @@
     <script src="/static/js/modules/file-upload-manager.js?v=2025010510"></script>
     <script src="/static/js/modules/image-handler.js?v=2025010510"></script>
     <script src="/static/js/modules/settings-manager.js?v=2025010510"></script>
+    <script src="/static/js/modules/rules-manager.js?v=2025010510"></script>
     <script src="/static/js/modules/ui-manager.js?v=2025010510"></script>
     <script src="/static/js/modules/textarea-height-manager.js?v=2025010510"></script>
 
@@ -1288,6 +1352,7 @@
                 'MCPFeedback.StatusUtils',
                 'MCPFeedback.ConnectionMonitor',
                 'MCPFeedback.SessionManager',
+                'MCPFeedback.RulesManager',
                 'MCPFeedback.FeedbackApp'
             ];
 
@@ -1331,6 +1396,33 @@
                     window.MCPFeedback.app = window.feedbackApp;
                 }
 
+                // 初始化規則管理器
+                if (window.MCPFeedback && window.MCPFeedback.RulesManager) {
+                    logger.debug('初始化規則管理器...');
+                    window.rulesManager = new window.MCPFeedback.RulesManager();
+
+                    // 等待 DOM 準備好後初始化
+                    setTimeout(() => {
+                        const rulesContainer = document.getElementById('rulesManagerContainer');
+                        if (rulesContainer) {
+                            const success = window.rulesManager.initialize('rulesManagerContainer', {
+                                onRuleChange: function(rule) {
+                                    logger.debug('規則變更:', rule);
+                                },
+                                onRuleTest: function(results) {
+                                    logger.debug('規則測試結果:', results);
+                                }
+                            });
+
+                            if (success) {
+                                logger.info('規則管理器初始化成功');
+                            } else {
+                                logger.warn('規則管理器初始化失敗');
+                            }
+                        }
+                    }, 200);
+                }
+
                 // 初始化完成後，立即渲染現有的 AI 摘要內容為 Markdown
                 setTimeout(function() {
                     if (window.feedbackApp && window.feedbackApp.uiManager) {
@@ -1352,10 +1444,24 @@
             }
         }
 
+        // 初始化訊息類型
+        function initializeMessageType() {
+            const messageType = '{{ message_type|default("general") }}';
+            console.log('🏷️ 初始化訊息類型:', messageType);
+
+            if (window.MCPFeedback && window.MCPFeedback.MessageTypeManager) {
+                window.MCPFeedback.MessageTypeManager.updateMessageType(messageType);
+            }
+        }
+
         // 頁面載入完成後初始化
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initializeApp);
+            document.addEventListener('DOMContentLoaded', function() {
+                initializeMessageType();
+                initializeApp();
+            });
         } else {
+            initializeMessageType();
             initializeApp();
         }
     </script>

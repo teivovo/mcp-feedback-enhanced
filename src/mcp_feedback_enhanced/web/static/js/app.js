@@ -1627,65 +1627,318 @@
     };
 
     /**
-     * 顯示自動提交模板選擇下拉選單
+     * 顯示增強的模板選擇器模態框
      */
     FeedbackApp.prototype.showAutoSubmitTemplateDropdown = function() {
+        this.showEnhancedTemplateSelector();
+    };
+
+    /**
+     * 顯示增強的模板選擇器
+     */
+    FeedbackApp.prototype.showEnhancedTemplateSelector = function() {
         const self = this;
 
-        // 創建模板選擇下拉選單
-        const dropdown = document.createElement('div');
-        dropdown.className = 'auto-submit-dropdown';
-        dropdown.innerHTML = `
-            <div class="dropdown-header">選擇模板:</div>
-            <select id="autoSubmitTemplateDropdown" class="template-select">
-                <option value="">請選擇模板...</option>
-            </select>
-            <div class="dropdown-actions">
-                <button class="btn-cancel">取消</button>
-                <button class="btn-confirm">確認</button>
+        // 創建模態框
+        const modal = this.createTemplateSelector();
+        document.body.appendChild(modal);
+
+        // 顯示模態框
+        setTimeout(() => {
+            modal.classList.add('show');
+        }, 10);
+
+        // 聚焦搜索框
+        const searchInput = modal.querySelector('.template-search-input');
+        if (searchInput) {
+            setTimeout(() => searchInput.focus(), 300);
+        }
+    };
+
+    /**
+     * 創建模板選擇器模態框
+     */
+    FeedbackApp.prototype.createTemplateSelector = function() {
+        const self = this;
+        const prompts = this.promptManager ? this.promptManager.getAllPrompts() : [];
+
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        modal.innerHTML = `
+            <div class="modal-container template-selector-modal">
+                <div class="modal-header">
+                    <h3 class="modal-title">📝 選擇自動提交模板</h3>
+                    <button type="button" class="modal-close-btn" aria-label="關閉">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="template-search-container">
+                        <span class="template-search-icon">🔍</span>
+                        <input type="text" class="template-search-input" placeholder="搜索模板..." />
+                    </div>
+                    <div class="template-grid" id="templateGrid">
+                        ${this.renderTemplateCards(prompts)}
+                    </div>
+                </div>
+                <div class="modal-footer template-selector-footer">
+                    <div class="template-selection-info">
+                        <span id="selectedTemplateInfo">請選擇一個模板</span>
+                    </div>
+                    <div class="template-footer-actions">
+                        <button type="button" class="btn btn-secondary" id="templateCancelBtn">取消</button>
+                        <button type="button" class="btn btn-primary" id="templateConfirmBtn" disabled>確認選擇</button>
+                    </div>
+                </div>
             </div>
         `;
 
-        // 填充模板選項
-        const select = dropdown.querySelector('#autoSubmitTemplateDropdown');
-        if (this.promptManager) {
-            const prompts = this.promptManager.getAllPrompts();
-            prompts.forEach(prompt => {
-                const option = document.createElement('option');
-                option.value = prompt.id;
-                option.textContent = prompt.name;
-                select.appendChild(option);
+        // 設置事件監聽器
+        this.setupTemplateSelectorEvents(modal);
+
+        return modal;
+    };
+
+    /**
+     * 渲染模板卡片
+     */
+    FeedbackApp.prototype.renderTemplateCards = function(prompts) {
+        if (!prompts || prompts.length === 0) {
+            return `
+                <div class="template-empty-state">
+                    <div class="template-empty-icon">📝</div>
+                    <div>尚無可用模板</div>
+                    <div style="font-size: 12px; margin-top: 8px;">請先在設定中創建模板</div>
+                </div>
+            `;
+        }
+
+        return prompts.map(prompt => {
+            const preview = prompt.content.length > 100
+                ? prompt.content.substring(0, 100) + '...'
+                : prompt.content;
+
+            return `
+                <div class="template-card" data-template-id="${prompt.id}">
+                    <div class="template-card-header">
+                        <h4 class="template-name">${this.escapeHtml(prompt.name)}</h4>
+                        ${prompt.isAutoSubmit ? '<span class="template-auto-submit-badge">自動提交</span>' : ''}
+                    </div>
+                    <div class="template-content-preview">${this.escapeHtml(preview)}</div>
+                    <div class="template-meta">
+                        <span>長度: ${prompt.content.length} 字符</span>
+                        <span>創建: ${this.formatDate(prompt.createdAt)}</span>
+                    </div>
+                    <div class="template-actions">
+                        <button class="template-preview-btn" data-action="preview">預覽</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    };
+
+    /**
+     * 設置模板選擇器事件
+     */
+    FeedbackApp.prototype.setupTemplateSelectorEvents = function(modal) {
+        const self = this;
+        let selectedTemplateId = null;
+
+        // 關閉按鈕
+        const closeBtn = modal.querySelector('.modal-close-btn');
+        const cancelBtn = modal.querySelector('#templateCancelBtn');
+
+        [closeBtn, cancelBtn].forEach(btn => {
+            if (btn) {
+                btn.addEventListener('click', () => {
+                    self.closeTemplateSelector(modal);
+                });
+            }
+        });
+
+        // 點擊背景關閉
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                self.closeTemplateSelector(modal);
+            }
+        });
+
+        // ESC 鍵關閉
+        document.addEventListener('keydown', function escapeHandler(e) {
+            if (e.key === 'Escape') {
+                self.closeTemplateSelector(modal);
+                document.removeEventListener('keydown', escapeHandler);
+            }
+        });
+
+        // 搜索功能
+        const searchInput = modal.querySelector('.template-search-input');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                self.filterTemplates(modal, e.target.value);
             });
         }
 
-        // 設置事件監聽器
-        const cancelBtn = dropdown.querySelector('.btn-cancel');
-        const confirmBtn = dropdown.querySelector('.btn-confirm');
+        // 模板卡片選擇
+        const templateGrid = modal.querySelector('#templateGrid');
+        if (templateGrid) {
+            templateGrid.addEventListener('click', (e) => {
+                const card = e.target.closest('.template-card');
+                if (card) {
+                    // 處理預覽按鈕
+                    if (e.target.classList.contains('template-preview-btn')) {
+                        self.previewTemplate(card.dataset.templateId);
+                        return;
+                    }
 
-        cancelBtn.addEventListener('click', function() {
-            dropdown.remove();
+                    // 選擇模板
+                    self.selectTemplateCard(modal, card);
+                    selectedTemplateId = card.dataset.templateId;
+                }
+            });
+        }
+
+        // 確認按鈕
+        const confirmBtn = modal.querySelector('#templateConfirmBtn');
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', () => {
+                if (selectedTemplateId) {
+                    self.enableMainAutoSubmit(selectedTemplateId);
+                    self.closeTemplateSelector(modal);
+                }
+            });
+        }
+    };
+
+    /**
+     * 關閉模板選擇器
+     */
+    FeedbackApp.prototype.closeTemplateSelector = function(modal) {
+        modal.classList.remove('show');
+        setTimeout(() => {
+            if (modal.parentNode) {
+                modal.parentNode.removeChild(modal);
+            }
+        }, 300);
+    };
+
+    /**
+     * 選擇模板卡片
+     */
+    FeedbackApp.prototype.selectTemplateCard = function(modal, card) {
+        // 移除其他選中狀態
+        const allCards = modal.querySelectorAll('.template-card');
+        allCards.forEach(c => c.classList.remove('selected'));
+
+        // 選中當前卡片
+        card.classList.add('selected');
+
+        // 更新選擇信息
+        const templateName = card.querySelector('.template-name').textContent;
+        const infoElement = modal.querySelector('#selectedTemplateInfo');
+        if (infoElement) {
+            infoElement.textContent = `已選擇: ${templateName}`;
+        }
+
+        // 啟用確認按鈕
+        const confirmBtn = modal.querySelector('#templateConfirmBtn');
+        if (confirmBtn) {
+            confirmBtn.disabled = false;
+        }
+    };
+
+    /**
+     * 過濾模板
+     */
+    FeedbackApp.prototype.filterTemplates = function(modal, searchTerm) {
+        const cards = modal.querySelectorAll('.template-card');
+        const searchLower = searchTerm.toLowerCase();
+
+        cards.forEach(card => {
+            const name = card.querySelector('.template-name').textContent.toLowerCase();
+            const content = card.querySelector('.template-content-preview').textContent.toLowerCase();
+
+            if (name.includes(searchLower) || content.includes(searchLower)) {
+                card.style.display = '';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    };
+
+    /**
+     * 預覽模板
+     */
+    FeedbackApp.prototype.previewTemplate = function(templateId) {
+        if (!this.promptManager) return;
+
+        const prompt = this.promptManager.getPrompt(templateId);
+        if (!prompt) return;
+
+        // 創建預覽模態框
+        const previewModal = document.createElement('div');
+        previewModal.className = 'modal-overlay';
+        previewModal.innerHTML = `
+            <div class="modal-container" style="max-width: 600px;">
+                <div class="modal-header">
+                    <h3 class="modal-title">📖 模板預覽: ${this.escapeHtml(prompt.name)}</h3>
+                    <button type="button" class="modal-close-btn" aria-label="關閉">×</button>
+                </div>
+                <div class="modal-body">
+                    <div style="background: var(--bg-tertiary); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color);">
+                        <pre style="white-space: pre-wrap; margin: 0; font-family: inherit; line-height: 1.5;">${this.escapeHtml(prompt.content)}</pre>
+                    </div>
+                    <div style="margin-top: 12px; font-size: 12px; color: var(--text-secondary);">
+                        長度: ${prompt.content.length} 字符 | 創建時間: ${this.formatDate(prompt.createdAt)}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">關閉</button>
+                </div>
+            </div>
+        `;
+
+        // 關閉事件
+        const closeBtn = previewModal.querySelector('.modal-close-btn');
+        closeBtn.addEventListener('click', () => {
+            previewModal.remove();
         });
 
-        confirmBtn.addEventListener('click', function() {
-            const selectedTemplate = select.value;
-            if (selectedTemplate) {
-                self.enableMainAutoSubmit(selectedTemplate);
-                dropdown.remove();
+        previewModal.addEventListener('click', (e) => {
+            if (e.target === previewModal) {
+                previewModal.remove();
             }
         });
 
-        // 點擊外部關閉
-        dropdown.addEventListener('click', function(e) {
-            if (e.target === dropdown) {
-                dropdown.remove();
-            }
-        });
+        document.body.appendChild(previewModal);
+        setTimeout(() => previewModal.classList.add('show'), 10);
+    };
 
-        // 添加到頁面
-        document.body.appendChild(dropdown);
+    /**
+     * 格式化日期
+     */
+    FeedbackApp.prototype.formatDate = function(dateString) {
+        if (!dateString) return '未知';
 
-        // 聚焦到選擇框
-        setTimeout(() => select.focus(), 100);
+        try {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('zh-TW', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            });
+        } catch (e) {
+            return '未知';
+        }
+    };
+
+    /**
+     * HTML 轉義
+     */
+    FeedbackApp.prototype.escapeHtml = function(text) {
+        if (!text) return '';
+
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     };
 
     /**

@@ -36,6 +36,14 @@
         this.onTabChange = options.onTabChange || null;
         this.onLayoutModeChange = options.onLayoutModeChange || null;
 
+        // 智能滾動管理
+        this.smartScrollEnabled = true;
+        this.lastScrollTime = 0;
+        this.scrollThreshold = 100; // 滾動閾值，超過此值認為用戶在閱讀
+        this.recentScrollActivity = false;
+        this.scrollActivityTimeout = null;
+        this.newMessageIndicator = null;
+
         // 初始化防抖函數
         this.initDebounceHandlers();
 
@@ -75,6 +83,12 @@
 
         // 回饋相關元素
         this.submitBtn = Utils.safeQuerySelector('#submitBtn');
+
+        // 初始化除錯面板
+        this.initDebugPanel();
+
+        // 初始化智能滾動
+        this.initSmartScroll();
 
         console.log('✅ UI 元素初始化完成');
     };
@@ -553,6 +567,238 @@
     UIManager.prototype.setLastSubmissionTime = function(timestamp) {
         this.lastSubmissionTime = timestamp;
         this.updateStatusIndicator();
+    };
+
+    /**
+     * 初始化智能滾動功能
+     */
+    UIManager.prototype.initSmartScroll = function() {
+        // 創建新訊息指示器
+        this.createNewMessageIndicator();
+
+        // 監聽滾動事件
+        this.setupScrollListeners();
+
+        // 從設定載入智能滾動偏好
+        this.smartScrollEnabled = localStorage.getItem('smartScrollEnabled') !== 'false';
+
+        console.log('✅ Smart scroll initialized');
+    };
+
+    /**
+     * 創建新訊息指示器
+     */
+    UIManager.prototype.createNewMessageIndicator = function() {
+        // 檢查是否已存在
+        if (document.getElementById('newMessageIndicator')) {
+            return;
+        }
+
+        const indicator = document.createElement('div');
+        indicator.id = 'newMessageIndicator';
+        indicator.className = 'new-message-indicator hidden';
+        indicator.innerHTML = `
+            <div class="indicator-content">
+                <span class="indicator-icon">📬</span>
+                <span class="indicator-text" data-i18n="smartScroll.newMessage">有新訊息</span>
+                <button class="scroll-to-top-btn" data-i18n-title="smartScroll.scrollToTop" title="滾動到頂部">
+                    <span>↑</span>
+                </button>
+            </div>
+        `;
+
+        // 添加點擊事件
+        const scrollBtn = indicator.querySelector('.scroll-to-top-btn');
+        scrollBtn.addEventListener('click', () => {
+            this.smoothScrollToTop();
+            this.hideNewMessageIndicator();
+        });
+
+        // 添加到頁面
+        document.body.appendChild(indicator);
+        this.newMessageIndicator = indicator;
+    };
+
+    /**
+     * 設置滾動監聽器
+     */
+    UIManager.prototype.setupScrollListeners = function() {
+        const self = this;
+
+        // 滾動事件監聽
+        window.addEventListener('scroll', Utils.DOM.throttle(function() {
+            self.handleScrollEvent();
+        }, 100));
+
+        // 滾動活動檢測
+        window.addEventListener('scroll', function() {
+            self.recentScrollActivity = true;
+            self.lastScrollTime = Date.now();
+
+            // 清除之前的超時
+            if (self.scrollActivityTimeout) {
+                clearTimeout(self.scrollActivityTimeout);
+            }
+
+            // 設置新的超時
+            self.scrollActivityTimeout = setTimeout(function() {
+                self.recentScrollActivity = false;
+            }, 2000); // 2秒後認為滾動活動結束
+        });
+    };
+
+    /**
+     * 處理滾動事件
+     */
+    UIManager.prototype.handleScrollEvent = function() {
+        // 如果用戶滾動到頂部附近，隱藏新訊息指示器
+        if (this.isNearTop()) {
+            this.hideNewMessageIndicator();
+        }
+    };
+
+    /**
+     * 檢測用戶是否在閱讀
+     */
+    UIManager.prototype.detectUserReading = function() {
+        const scrollY = window.scrollY || document.documentElement.scrollTop;
+        return scrollY > this.scrollThreshold && !this.recentScrollActivity;
+    };
+
+    /**
+     * 檢測是否接近頂部
+     */
+    UIManager.prototype.isNearTop = function() {
+        const scrollY = window.scrollY || document.documentElement.scrollTop;
+        return scrollY < this.scrollThreshold;
+    };
+
+    /**
+     * 處理新訊息（由 WebSocket 管理器調用）
+     */
+    UIManager.prototype.handleNewMessage = function(messageData) {
+        if (!this.smartScrollEnabled) {
+            return;
+        }
+
+        const isUserReading = this.detectUserReading();
+
+        if (!isUserReading && this.isNearTop()) {
+            // 用戶在頂部且沒有在閱讀，自動滾動
+            this.smoothScrollToTop();
+        } else if (isUserReading) {
+            // 用戶在閱讀，顯示新訊息指示器
+            this.showNewMessageIndicator();
+        }
+    };
+
+    /**
+     * 平滑滾動到頂部
+     */
+    UIManager.prototype.smoothScrollToTop = function() {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    };
+
+    /**
+     * 顯示新訊息指示器
+     */
+    UIManager.prototype.showNewMessageIndicator = function() {
+        if (this.newMessageIndicator) {
+            this.newMessageIndicator.classList.remove('hidden');
+            this.newMessageIndicator.classList.add('visible');
+        }
+    };
+
+    /**
+     * 隱藏新訊息指示器
+     */
+    UIManager.prototype.hideNewMessageIndicator = function() {
+        if (this.newMessageIndicator) {
+            this.newMessageIndicator.classList.remove('visible');
+            this.newMessageIndicator.classList.add('hidden');
+        }
+    };
+
+    /**
+     * 切換智能滾動功能
+     */
+    UIManager.prototype.toggleSmartScroll = function() {
+        this.smartScrollEnabled = !this.smartScrollEnabled;
+        localStorage.setItem('smartScrollEnabled', this.smartScrollEnabled.toString());
+        console.log(`Smart scroll ${this.smartScrollEnabled ? 'enabled' : 'disabled'}`);
+    };
+
+    /**
+     * 初始化除錯面板功能
+     */
+    UIManager.prototype.initDebugPanel = function() {
+        const debugToggleBtn = document.getElementById('debugToggleBtn');
+        const debugPanel = document.getElementById('debugPanel');
+
+        if (!debugToggleBtn || !debugPanel) {
+            console.warn('Debug panel elements not found');
+            return;
+        }
+
+        // 從 localStorage 讀取除錯面板狀態
+        const isExpanded = localStorage.getItem('debugPanelExpanded') === 'true';
+        this.setDebugPanelState(isExpanded);
+
+        // 綁定點擊事件
+        debugToggleBtn.addEventListener('click', () => {
+            this.toggleDebugPanel();
+        });
+
+        console.log('✅ Debug panel initialized');
+    };
+
+    /**
+     * 切換除錯面板
+     */
+    UIManager.prototype.toggleDebugPanel = function() {
+        const debugToggleBtn = document.getElementById('debugToggleBtn');
+        const debugPanel = document.getElementById('debugPanel');
+
+        if (!debugToggleBtn || !debugPanel) return;
+
+        const isExpanded = debugPanel.classList.contains('expanded');
+        this.setDebugPanelState(!isExpanded);
+    };
+
+    /**
+     * 設置除錯面板狀態
+     */
+    UIManager.prototype.setDebugPanelState = function(expanded) {
+        const debugToggleBtn = document.getElementById('debugToggleBtn');
+        const debugPanel = document.getElementById('debugPanel');
+
+        if (!debugToggleBtn || !debugPanel) return;
+
+        if (expanded) {
+            debugPanel.classList.remove('collapsed');
+            debugPanel.classList.add('expanded');
+            debugToggleBtn.classList.add('expanded');
+        } else {
+            debugPanel.classList.remove('expanded');
+            debugPanel.classList.add('collapsed');
+            debugToggleBtn.classList.remove('expanded');
+        }
+
+        // 保存狀態到 localStorage
+        localStorage.setItem('debugPanelExpanded', expanded.toString());
+
+        console.log(`Debug panel ${expanded ? 'expanded' : 'collapsed'}`);
+    };
+
+    /**
+     * 獲取除錯面板狀態
+     */
+    UIManager.prototype.isDebugPanelExpanded = function() {
+        const debugPanel = document.getElementById('debugPanel');
+        return debugPanel && debugPanel.classList.contains('expanded');
     };
 
     // 將 UIManager 加入命名空間

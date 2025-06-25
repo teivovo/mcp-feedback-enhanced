@@ -40,6 +40,9 @@
         // 連線監控器引用
         this.connectionMonitor = options.connectionMonitor || null;
 
+        // UI 管理器引用（用於智能滾動）
+        this.uiManager = options.uiManager || null;
+
         // 待處理的提交
         this.pendingSubmission = null;
         this.sessionUpdatePending = false;
@@ -151,6 +154,11 @@
                 }
 
                 this.processMessage(data);
+
+                // 觸發智能滾動處理
+                if (this.uiManager && this.uiManager.handleNewMessage) {
+                    this.uiManager.handleNewMessage(data);
+                }
 
                 // 調用外部回調
                 if (this.onMessage) {
@@ -268,6 +276,12 @@
                 if (this.connectionMonitor) {
                     this.connectionMonitor.recordPong();
                 }
+                break;
+            case 'session_update':
+                this.handleSessionUpdate(data);
+                break;
+            case 'message_type_update':
+                this.handleMessageTypeUpdate(data);
                 break;
             default:
                 // 其他訊息類型由外部處理
@@ -456,6 +470,80 @@
         }
         this.isConnected = false;
         this.connectionReady = false;
+    };
+
+    /**
+     * 處理會話更新
+     */
+    WebSocketManager.prototype.handleSessionUpdate = function(data) {
+        console.log('🔄 收到會話更新:', data);
+
+        // 更新會話信息，包括 message_type
+        if (data.session_data) {
+            this.currentSessionData = data.session_data;
+
+            // 如果有 message_type，觸發相關處理
+            if (data.session_data.message_type) {
+                this.handleMessageTypeChange(data.session_data.message_type);
+            }
+
+            // 觸發會話更新事件
+            if (this.onSessionUpdate) {
+                this.onSessionUpdate(data.session_data);
+            }
+        }
+    };
+
+    /**
+     * 處理訊息類型更新
+     */
+    WebSocketManager.prototype.handleMessageTypeUpdate = function(data) {
+        console.log('📝 收到訊息類型更新:', data);
+
+        if (data.message_type) {
+            this.handleMessageTypeChange(data.message_type);
+        }
+    };
+
+    /**
+     * 處理訊息類型變更
+     */
+    WebSocketManager.prototype.handleMessageTypeChange = function(messageType) {
+        console.log('🏷️ 訊息類型變更為:', messageType);
+
+        // 更新當前訊息類型
+        this.currentMessageType = messageType;
+
+        // 觸發訊息類型變更事件
+        if (this.onMessageTypeChange) {
+            this.onMessageTypeChange(messageType);
+        }
+
+        // 通知其他模組
+        if (window.MCPFeedback && window.MCPFeedback.MessageTypeManager) {
+            window.MCPFeedback.MessageTypeManager.updateMessageType(messageType);
+        }
+    };
+
+    /**
+     * 獲取當前訊息類型
+     */
+    WebSocketManager.prototype.getCurrentMessageType = function() {
+        return this.currentMessageType || 'general';
+    };
+
+    /**
+     * 設置訊息類型變更回調
+     */
+    WebSocketManager.prototype.setMessageTypeChangeCallback = function(callback) {
+        this.onMessageTypeChange = callback;
+    };
+
+    /**
+     * 設置會話更新回調
+     */
+    WebSocketManager.prototype.setSessionUpdateCallback = function(callback) {
+        this.onSessionUpdate = callback;
     };
 
     // 將 WebSocketManager 加入命名空間

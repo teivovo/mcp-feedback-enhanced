@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Responsive Header Test</title>
+    <link rel="stylesheet" href="src/mcp_feedback_enhanced/web/static/css/session-management.css">
+    <style>
+        :root {
+            --panel-header-bg: rgba(255, 255, 255, 0.95);
+            --panel-border: #e0e0e0;
+            --text-primary: #333;
+            --text-secondary: #666;
+            --warning-color: #ff9800;
+        }
+        
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+        }
+        
+        .test-container {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .test-section {
+            margin-bottom: 40px;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .test-label {
+            background: #333;
+            color: white;
+            padding: 10px 20px;
+            font-weight: bold;
+        }
+        
+        .resize-instructions {
+            padding: 20px;
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="resize-instructions">
+            <h2>📱 Responsive Header Test</h2>
+            <p><strong>Instructions:</strong> Resize your browser window to test different breakpoints:</p>
+            <ul>
+                <li><strong>1200px+:</strong> Full desktop layout with 3-column grid</li>
+                <li><strong>992px-1199px:</strong> Medium desktop with reduced spacing</li>
+                <li><strong>768px-991px:</strong> Tablet layout with 2-row grid</li>
+                <li><strong>576px-767px:</strong> Mobile layout with stacked elements</li>
+                <li><strong>Below 576px:</strong> Compact mobile with minimal info</li>
+            </ul>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-label">Desktop Layout (1200px+)</div>
+            <!-- Test Header -->
+            <div class="connection-monitor-bar">
+                <!-- 左側：應用標題和專案資訊 -->
+                <div class="app-info-section">
+                    <div class="app-title">
+                        <h1>MCP Feedback Enhanced</h1>
+                    </div>
+                    <div class="project-info">
+                        📂 專案目錄: /Users/developer/projects/my-awesome-project
+                    </div>
+                </div>
+
+                <!-- 中間：連線狀態資訊 -->
+                <div class="connection-status-group">
+                    <!-- 會話狀態資訊 -->
+                    <div class="session-status-info">
+                        <div class="current-session-info">
+                            <span class="session-indicator">
+                                📋 當前會話: <span class="session-id-display">abc12345...</span>
+                            </span>
+                            <span class="session-age">
+                                活躍時間: <span>2m 30s</span>
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- 倒數計時器顯示 -->
+                    <div class="countdown-display">
+                        <span class="countdown-label">提交倒數</span>
+                        <span class="countdown-timer">05:30</span>
+                    </div>
+
+                    <!-- 主要連線狀態 -->
+                    <div class="connection-indicator connecting">
+                        <div class="status-icon pulse"></div>
+                        <span class="status-text">已連接</span>
+                        <div class="connection-quality hide-xs">
+                            <div class="latency-indicator">延遲: 45ms</div>
+                            <div class="signal-strength">
+                                <div class="signal-bar"></div>
+                                <div class="signal-bar"></div>
+                                <div class="signal-bar"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 連線和狀態資訊組合 -->
+                    <div class="connection-status-combined">
+                        <!-- 連線詳細資訊 -->
+                        <div class="connection-details hide-xs">
+                            <span class="connection-time">連線時間: 15:42</span>
+                            <span class="reconnect-count">重連: 0 次</span>
+                        </div>
+
+                        <!-- 詳細狀態資訊 -->
+                        <div class="detailed-status-info">
+                            <div class="websocket-metrics">
+                                <span class="metric">訊息: 42</span>
+                                <span class="metric">延遲: 45ms</span>
+                            </div>
+                            <div class="session-metrics">
+                                <span class="metric">會話: 1</span>
+                                <span class="metric">狀態: 等待中</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右側：快速操作 -->
+                <div class="quick-actions">
+                    <button style="padding: 4px 8px; font-size: 11px;">設定</button>
+                    <button style="padding: 4px 8px; font-size: 11px;">說明</button>
+                </div>
+            </div>
+        </div>
+        
+        <div style="margin-top: 40px; padding: 20px; background: #f0f0f0; border-radius: 8px;">
+            <h3>✅ Test Results:</h3>
+            <p>Resize your browser window and verify:</p>
+            <ul>
+                <li>Header elements don't overlap or get cramped</li>
+                <li>Text remains readable at all sizes</li>
+                <li>Layout adapts smoothly between breakpoints</li>
+                <li>Non-essential elements hide on small screens</li>
+                <li>All functionality remains accessible</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Audio Permission System Test</title>
+    <link rel="stylesheet" href="src/mcp_feedback_enhanced/web/static/css/styles.css">
+    <link rel="stylesheet" href="src/mcp_feedback_enhanced/web/static/css/audio-management.css">
+    <style>
+        :root {
+            --bg-primary: #1e1e1e;
+            --bg-secondary: #2d2d30;
+            --bg-tertiary: #3e3e42;
+            --text-primary: #cccccc;
+            --text-secondary: #9e9e9e;
+            --accent-color: #007acc;
+            --border-color: #464647;
+        }
+        
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .test-container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        .test-header {
+            background: var(--bg-secondary);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .test-controls {
+            background: rgba(0, 122, 204, 0.1);
+            border: 1px solid var(--accent-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .control-group {
+            margin-bottom: 15px;
+        }
+        
+        .btn {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            font-size: 14px;
+            transition: background 0.2s ease;
+        }
+        
+        .btn:hover {
+            background: #005a9e;
+        }
+        
+        .btn-secondary {
+            background: var(--text-secondary);
+        }
+        
+        .btn-secondary:hover {
+            background: #7e7e7e;
+        }
+        
+        .status-display {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .status-item:last-child {
+            border-bottom: none;
+        }
+        
+        .status-label {
+            font-weight: 500;
+        }
+        
+        .status-value {
+            color: var(--text-secondary);
+            font-family: monospace;
+        }
+        
+        .feature-list {
+            background: rgba(76, 175, 80, 0.1);
+            border: 1px solid #4caf50;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .feature-list h3 {
+            color: #4caf50;
+            margin-top: 0;
+        }
+        
+        .quick-actions {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-header">
+            <h1>🔊 Enhanced Audio Permission System Test</h1>
+            <p>This test demonstrates the improved audio notification system with explicit permission requests, fallback notifications, and better user experience.</p>
+        </div>
+        
+        <div class="test-controls">
+            <h3>🎮 Test Controls</h3>
+            
+            <div class="control-group">
+                <strong>Permission System:</strong><br>
+                <button class="btn" onclick="showPermissionDialog()">🔐 Show Permission Dialog</button>
+                <button class="btn" onclick="grantAudioPermission()">✅ Grant Audio Permission</button>
+                <button class="btn" onclick="denyAudioPermission()">❌ Deny Audio Permission</button>
+                <button class="btn btn-secondary" onclick="resetPermissions()">🔄 Reset Permissions</button>
+            </div>
+            
+            <div class="control-group">
+                <strong>Audio Testing:</strong><br>
+                <button class="btn" onclick="testAudioNotification()">🔊 Test Audio Notification</button>
+                <button class="btn" onclick="testAutoplayBlocked()">🚫 Simulate Autoplay Blocked</button>
+                <button class="btn" onclick="testUserInteraction()">👆 Simulate User Interaction</button>
+            </div>
+            
+            <div class="control-group">
+                <strong>Fallback Notifications:</strong><br>
+                <button class="btn" onclick="testBrowserNotification()">🔔 Test Browser Notification</button>
+                <button class="btn" onclick="testTitleBarNotification()">📋 Test Title Bar Notification</button>
+                <button class="btn" onclick="testVisualIndicator()">👁️ Test Visual Indicator</button>
+            </div>
+            
+            <div class="control-group">
+                <strong>Permission Indicator:</strong><br>
+                <button class="btn" onclick="updateIndicatorEnabled()">🟢 Show Enabled State</button>
+                <button class="btn" onclick="updateIndicatorFallback()">🟡 Show Fallback State</button>
+                <button class="btn" onclick="updateIndicatorDisabled()">🔴 Show Disabled State</button>
+            </div>
+        </div>
+        
+        <div class="status-display">
+            <h3>📊 System Status</h3>
+            <div class="status-item">
+                <span class="status-label">Audio Permission Requested:</span>
+                <span class="status-value" id="permissionRequested">false</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Audio Permission Granted:</span>
+                <span class="status-value" id="permissionGranted">false</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">User Has Interacted:</span>
+                <span class="status-value" id="userInteracted">false</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Autoplay Blocked:</span>
+                <span class="status-value" id="autoplayBlocked">false</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Fallback Notifications:</span>
+                <span class="status-value" id="fallbackEnabled">false</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Browser Notification Permission:</span>
+                <span class="status-value" id="browserNotificationPermission">default</span>
+            </div>
+        </div>
+        
+        <div class="feature-list">
+            <h3>✨ Enhanced Audio Features</h3>
+            <ul>
+                <li><strong>🔐 Explicit Permission Request:</strong> Clear dialog asking for audio permission</li>
+                <li><strong>🔔 Fallback Notifications:</strong> Browser notifications, title bar changes, visual indicators</li>
+                <li><strong>📊 Permission Status Indicator:</strong> Visual feedback of current audio state</li>
+                <li><strong>🎯 Smart Permission Handling:</strong> Graceful degradation when audio is blocked</li>
+                <li><strong>💾 State Persistence:</strong> Remembers user preferences across sessions</li>
+                <li><strong>🔄 One-Click Enable:</strong> Easy audio activation button</li>
+                <li><strong>📱 Mobile Friendly:</strong> Responsive design for all devices</li>
+                <li><strong>🌐 Internationalized:</strong> Multi-language support</li>
+                <li><strong>♿ Accessible:</strong> Keyboard navigation and screen reader support</li>
+                <li><strong>🎨 Visual Feedback:</strong> Clear status indicators and animations</li>
+            </ul>
+        </div>
+        
+        <div style="background: rgba(255, 152, 0, 0.1); border: 1px solid #ff9800; border-radius: 8px; padding: 20px; margin-top: 20px;">
+            <h3 style="color: #ff9800; margin-top: 0;">🧪 Test Instructions</h3>
+            <ol>
+                <li><strong>Permission Dialog:</strong> Click "Show Permission Dialog" to see the enhanced permission request</li>
+                <li><strong>Grant/Deny:</strong> Test both permission scenarios to see different behaviors</li>
+                <li><strong>Audio Testing:</strong> Try audio notifications in different permission states</li>
+                <li><strong>Autoplay Simulation:</strong> Test how the system handles browser restrictions</li>
+                <li><strong>Fallback Methods:</strong> Test browser notifications, title changes, and visual indicators</li>
+                <li><strong>Status Monitoring:</strong> Watch the status display to see state changes</li>
+                <li><strong>Indicator States:</strong> Test different visual states of the permission indicator</li>
+                <li><strong>Reset & Retry:</strong> Use reset to test the full flow multiple times</li>
+            </ol>
+        </div>
+    </div>
+    
+    <!-- Quick Actions (simulates header placement) -->
+    <div class="quick-actions">
+        <div id="audioPermissionIndicator" class="audio-permission-indicator disabled">
+            <div class="indicator-content">
+                <span class="indicator-icon">🔇</span>
+                <span class="indicator-status">音效未啟用</span>
+                <button class="enable-audio-btn" onclick="showPermissionDialog()">啟用音效</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Mock audio permission system state
+        let mockState = {
+            audioPermissionRequested: false,
+            audioPermissionGranted: false,
+            userHasInteracted: false,
+            autoplayBlocked: false,
+            fallbackNotificationsEnabled: false,
+            permissionDialogShown: false
+        };
+        
+        // Update status display
+        function updateStatusDisplay() {
+            document.getElementById('permissionRequested').textContent = mockState.audioPermissionRequested;
+            document.getElementById('permissionGranted').textContent = mockState.audioPermissionGranted;
+            document.getElementById('userInteracted').textContent = mockState.userHasInteracted;
+            document.getElementById('autoplayBlocked').textContent = mockState.autoplayBlocked;
+            document.getElementById('fallbackEnabled').textContent = mockState.fallbackNotificationsEnabled;
+            
+            if ('Notification' in window) {
+                document.getElementById('browserNotificationPermission').textContent = Notification.permission;
+            }
+        }
+        
+        // Show permission dialog
+        function showPermissionDialog() {
+            if (mockState.permissionDialogShown) return;
+            mockState.permissionDialogShown = true;
+
+            const dialog = document.createElement('div');
+            dialog.className = 'audio-permission-dialog-overlay';
+            dialog.innerHTML = `
+                <div class="audio-permission-dialog">
+                    <div class="dialog-header">
+                        <h3>🔊 啟用音效通知</h3>
+                    </div>
+                    <div class="dialog-body">
+                        <p>為了提供更好的使用體驗，我們希望在有新訊息時播放音效通知。</p>
+                        <p>您可以選擇：</p>
+                        <ul>
+                            <li><strong>啟用音效</strong> - 播放音效通知</li>
+                            <li><strong>使用其他通知</strong> - 使用視覺通知和瀏覽器通知</li>
+                        </ul>
+                    </div>
+                    <div class="dialog-actions">
+                        <button class="btn btn-secondary" onclick="handlePermissionResponse(false, this)">使用其他通知</button>
+                        <button class="btn btn-primary" onclick="handlePermissionResponse(true, this)">啟用音效</button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(dialog);
+            setTimeout(() => dialog.classList.add('show'), 10);
+        }
+        
+        // Handle permission response
+        function handlePermissionResponse(granted, button) {
+            mockState.audioPermissionRequested = true;
+            mockState.audioPermissionGranted = granted;
+            
+            if (granted) {
+                console.log('✅ 用戶授予音效權限');
+                mockState.userHasInteracted = true;
+            } else {
+                console.log('❌ 用戶拒絕音效權限，啟用備用通知');
+                mockState.fallbackNotificationsEnabled = true;
+                requestBrowserNotificationPermission();
+            }
+            
+            updatePermissionIndicator();
+            updateStatusDisplay();
+            
+            const dialog = button.closest('.audio-permission-dialog-overlay');
+            dialog.classList.remove('show');
+            setTimeout(() => dialog.remove(), 300);
+            mockState.permissionDialogShown = false;
+        }
+        
+        // Grant audio permission
+        function grantAudioPermission() {
+            mockState.audioPermissionRequested = true;
+            mockState.audioPermissionGranted = true;
+            mockState.userHasInteracted = true;
+            updatePermissionIndicator();
+            updateStatusDisplay();
+            console.log('✅ Audio permission granted');
+        }
+        
+        // Deny audio permission
+        function denyAudioPermission() {
+            mockState.audioPermissionRequested = true;
+            mockState.audioPermissionGranted = false;
+            mockState.fallbackNotificationsEnabled = true;
+            updatePermissionIndicator();
+            updateStatusDisplay();
+            console.log('❌ Audio permission denied');
+        }
+        
+        // Reset permissions
+        function resetPermissions() {
+            mockState = {
+                audioPermissionRequested: false,
+                audioPermissionGranted: false,
+                userHasInteracted: false,
+                autoplayBlocked: false,
+                fallbackNotificationsEnabled: false,
+                permissionDialogShown: false
+            };
+            updatePermissionIndicator();
+            updateStatusDisplay();
+            console.log('🔄 Permissions reset');
+        }
+        
+        // Test audio notification
+        function testAudioNotification() {
+            if (!mockState.audioPermissionGranted) {
+                if (!mockState.audioPermissionRequested) {
+                    showPermissionDialog();
+                } else {
+                    testFallbackNotifications();
+                }
+            } else {
+                console.log('🔊 Playing audio notification');
+                // Simulate audio play
+                alert('🔊 Audio notification played!');
+            }
+        }
+        
+        // Test autoplay blocked
+        function testAutoplayBlocked() {
+            mockState.autoplayBlocked = true;
+            mockState.fallbackNotificationsEnabled = true;
+            updateStatusDisplay();
+            testFallbackNotifications();
+            console.log('🚫 Autoplay blocked, using fallback notifications');
+        }
+        
+        // Test user interaction
+        function testUserInteraction() {
+            mockState.userHasInteracted = true;
+            updateStatusDisplay();
+            console.log('👆 User interaction detected');
+        }
+        
+        // Test fallback notifications
+        function testFallbackNotifications() {
+            testBrowserNotification();
+            testTitleBarNotification();
+            testVisualIndicator();
+        }
+        
+        // Test browser notification
+        function testBrowserNotification() {
+            if ('Notification' in window && Notification.permission === 'granted') {
+                const notification = new Notification('MCP Feedback Enhanced', {
+                    body: '有新訊息到達',
+                    icon: '/favicon.ico'
+                });
+                setTimeout(() => notification.close(), 3000);
+                console.log('🔔 Browser notification shown');
+            } else {
+                console.log('🔔 Browser notification not available');
+            }
+        }
+        
+        // Test title bar notification
+        function testTitleBarNotification() {
+            const originalTitle = document.title;
+            let count = 0;
+            
+            const interval = setInterval(() => {
+                document.title = count % 2 === 0 ? '🔔 新訊息 - Test' : originalTitle;
+                count++;
+                
+                if (count >= 6) {
+                    clearInterval(interval);
+                    document.title = originalTitle;
+                }
+            }, 500);
+            
+            console.log('📋 Title bar notification started');
+        }
+        
+        // Test visual indicator
+        function testVisualIndicator() {
+            let indicator = document.getElementById('audioFallbackIndicator');
+            
+            if (!indicator) {
+                indicator = document.createElement('div');
+                indicator.id = 'audioFallbackIndicator';
+                indicator.className = 'audio-fallback-indicator';
+                indicator.innerHTML = `
+                    <div class="indicator-content">
+                        <span class="indicator-icon">🔔</span>
+                        <span class="indicator-text">新訊息通知</span>
+                    </div>
+                `;
+                document.body.appendChild(indicator);
+            }
+            
+            indicator.classList.add('show');
+            setTimeout(() => indicator.classList.remove('show'), 3000);
+            console.log('👁️ Visual indicator shown');
+        }
+        
+        // Update permission indicator
+        function updatePermissionIndicator() {
+            const indicator = document.getElementById('audioPermissionIndicator');
+            const icon = indicator.querySelector('.indicator-icon');
+            const status = indicator.querySelector('.indicator-status');
+            const enableBtn = indicator.querySelector('.enable-audio-btn');
+
+            if (mockState.audioPermissionGranted) {
+                icon.textContent = '🔊';
+                status.textContent = '音效已啟用';
+                enableBtn.style.display = 'none';
+                indicator.className = 'audio-permission-indicator enabled';
+            } else if (mockState.audioPermissionRequested) {
+                icon.textContent = '🔔';
+                status.textContent = '使用備用通知';
+                enableBtn.style.display = 'none';
+                indicator.className = 'audio-permission-indicator fallback';
+            } else {
+                icon.textContent = '🔇';
+                status.textContent = '音效未啟用';
+                enableBtn.style.display = 'inline-block';
+                indicator.className = 'audio-permission-indicator disabled';
+            }
+        }
+        
+        // Update indicator states for testing
+        function updateIndicatorEnabled() {
+            const indicator = document.getElementById('audioPermissionIndicator');
+            indicator.className = 'audio-permission-indicator enabled';
+            indicator.querySelector('.indicator-icon').textContent = '🔊';
+            indicator.querySelector('.indicator-status').textContent = '音效已啟用';
+            indicator.querySelector('.enable-audio-btn').style.display = 'none';
+        }
+        
+        function updateIndicatorFallback() {
+            const indicator = document.getElementById('audioPermissionIndicator');
+            indicator.className = 'audio-permission-indicator fallback';
+            indicator.querySelector('.indicator-icon').textContent = '🔔';
+            indicator.querySelector('.indicator-status').textContent = '使用備用通知';
+            indicator.querySelector('.enable-audio-btn').style.display = 'none';
+        }
+        
+        function updateIndicatorDisabled() {
+            const indicator = document.getElementById('audioPermissionIndicator');
+            indicator.className = 'audio-permission-indicator disabled';
+            indicator.querySelector('.indicator-icon').textContent = '🔇';
+            indicator.querySelector('.indicator-status').textContent = '音效未啟用';
+            indicator.querySelector('.enable-audio-btn').style.display = 'inline-block';
+        }
+        
+        // Request browser notification permission
+        function requestBrowserNotificationPermission() {
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission().then(permission => {
+                    updateStatusDisplay();
+                    console.log('🔔 Browser notification permission:', permission);
+                });
+            }
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            updateStatusDisplay();
+            updatePermissionIndicator();
+            console.log('✅ Enhanced audio permission system test initialized');
+        });
+    </script>
+</body>
+</html>

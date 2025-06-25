@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Template Selector Test</title>
+    <link rel="stylesheet" href="src/mcp_feedback_enhanced/web/static/css/styles.css">
+    <link rel="stylesheet" href="src/mcp_feedback_enhanced/web/static/css/prompt-management.css">
+    <style>
+        :root {
+            --bg-primary: #1e1e1e;
+            --bg-secondary: #2d2d30;
+            --bg-tertiary: #3e3e42;
+            --text-primary: #cccccc;
+            --text-secondary: #9e9e9e;
+            --accent-color: #007acc;
+            --border-color: #464647;
+        }
+        
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .test-container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        .test-header {
+            background: var(--bg-secondary);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .test-controls {
+            background: rgba(0, 122, 204, 0.1);
+            border: 1px solid var(--accent-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            font-size: 14px;
+            transition: background 0.2s ease;
+        }
+        
+        .btn:hover {
+            background: #005a9e;
+        }
+        
+        .btn-secondary {
+            background: var(--text-secondary);
+        }
+        
+        .btn-secondary:hover {
+            background: #7e7e7e;
+        }
+        
+        .btn:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
+        
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal-container {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+            max-height: 90vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .modal-overlay.show .modal-container {
+            transform: scale(1);
+        }
+        
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-title {
+            margin: 0;
+            font-size: 18px;
+            color: var(--text-primary);
+        }
+        
+        .modal-close-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+        
+        .modal-close-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+        
+        .modal-body {
+            padding: 20px;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .modal-footer {
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .feature-list {
+            background: rgba(76, 175, 80, 0.1);
+            border: 1px solid #4caf50;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .feature-list h3 {
+            color: #4caf50;
+            margin-top: 0;
+        }
+        
+        .feature-list ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        
+        .feature-list li {
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-header">
+            <h1>📝 Enhanced Template Selector Test</h1>
+            <p>This test demonstrates the redesigned template selection popup with improved UX, responsive design, and enhanced functionality.</p>
+        </div>
+        
+        <div class="test-controls">
+            <h3>🎮 Test Controls</h3>
+            
+            <div style="margin-bottom: 15px;">
+                <strong>Template Selector Actions:</strong><br>
+                <button class="btn" onclick="showTemplateSelector()">📝 Open Template Selector</button>
+                <button class="btn btn-secondary" onclick="showEmptyTemplateSelector()">📝 Open Empty Selector</button>
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+                <strong>Sample Data:</strong><br>
+                <button class="btn" onclick="loadSampleTemplates()">📋 Load Sample Templates</button>
+                <button class="btn btn-secondary" onclick="clearTemplates()">🗑️ Clear Templates</button>
+            </div>
+            
+            <div>
+                <strong>Responsive Test:</strong><br>
+                <button class="btn" onclick="testMobileView()">📱 Test Mobile View</button>
+                <button class="btn" onclick="testDesktopView()">🖥️ Test Desktop View</button>
+            </div>
+        </div>
+        
+        <div class="feature-list">
+            <h3>✨ Enhanced Features</h3>
+            <ul>
+                <li><strong>🔍 Search Functionality:</strong> Real-time filtering of templates by name and content</li>
+                <li><strong>📱 Responsive Design:</strong> Adapts layout for mobile, tablet, and desktop</li>
+                <li><strong>👁️ Template Preview:</strong> Click preview button to see full template content</li>
+                <li><strong>🎯 Visual Selection:</strong> Clear visual feedback for selected templates</li>
+                <li><strong>⌨️ Keyboard Navigation:</strong> ESC to close, Enter to confirm</li>
+                <li><strong>📊 Template Metadata:</strong> Shows character count and creation date</li>
+                <li><strong>🏷️ Auto-Submit Badge:</strong> Visual indicator for auto-submit templates</li>
+                <li><strong>🎨 Modern UI:</strong> Card-based layout with hover effects and animations</li>
+                <li><strong>♿ Accessibility:</strong> Proper ARIA labels and keyboard support</li>
+                <li><strong>🌐 Internationalization:</strong> Ready for multiple languages</li>
+            </ul>
+        </div>
+        
+        <div style="background: rgba(255, 152, 0, 0.1); border: 1px solid #ff9800; border-radius: 8px; padding: 20px; margin-top: 20px;">
+            <h3 style="color: #ff9800; margin-top: 0;">🧪 Test Instructions</h3>
+            <ol>
+                <li><strong>Load Sample Data:</strong> Click "Load Sample Templates" to populate with test data</li>
+                <li><strong>Open Selector:</strong> Click "Open Template Selector" to see the enhanced modal</li>
+                <li><strong>Test Search:</strong> Type in the search box to filter templates</li>
+                <li><strong>Select Template:</strong> Click on a template card to select it</li>
+                <li><strong>Preview Template:</strong> Click the "Preview" button to see full content</li>
+                <li><strong>Test Responsive:</strong> Use mobile/desktop buttons or resize window</li>
+                <li><strong>Test Empty State:</strong> Click "Open Empty Selector" to see empty state</li>
+                <li><strong>Keyboard Navigation:</strong> Use ESC to close, Tab to navigate</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        // Mock template data
+        let mockTemplates = [];
+        
+        // Sample templates for testing
+        const sampleTemplates = [
+            {
+                id: '1',
+                name: 'Bug Report Template',
+                content: 'Bug Description:\n\nSteps to Reproduce:\n1. \n2. \n3. \n\nExpected Behavior:\n\nActual Behavior:\n\nEnvironment:\n- OS: \n- Browser: \n- Version: \n\nAdditional Notes:',
+                isAutoSubmit: true,
+                createdAt: '2024-01-15T10:30:00Z'
+            },
+            {
+                id: '2',
+                name: 'Feature Request',
+                content: 'Feature Request: [Brief Title]\n\nDescription:\nPlease provide a detailed description of the feature you would like to see implemented.\n\nUse Case:\nDescribe how this feature would be used and who would benefit from it.\n\nAcceptance Criteria:\n- [ ] Criterion 1\n- [ ] Criterion 2\n- [ ] Criterion 3\n\nPriority: [High/Medium/Low]',
+                isAutoSubmit: false,
+                createdAt: '2024-01-10T14:20:00Z'
+            },
+            {
+                id: '3',
+                name: 'Code Review Feedback',
+                content: 'Code Review for: [PR/Commit]\n\n## Positive Feedback:\n- \n\n## Areas for Improvement:\n- \n\n## Suggestions:\n- \n\n## Questions:\n- \n\nOverall Assessment: [Approve/Request Changes/Comment]',
+                isAutoSubmit: true,
+                createdAt: '2024-01-08T09:15:00Z'
+            },
+            {
+                id: '4',
+                name: 'Meeting Notes Template',
+                content: 'Meeting: [Title]\nDate: [Date]\nAttendees: [List]\n\n## Agenda:\n1. \n2. \n3. \n\n## Discussion Points:\n- \n\n## Action Items:\n- [ ] Task 1 (Assigned to: )\n- [ ] Task 2 (Assigned to: )\n\n## Next Steps:\n- \n\nNext Meeting: [Date/Time]',
+                isAutoSubmit: false,
+                createdAt: '2024-01-05T16:45:00Z'
+            }
+        ];
+        
+        function loadSampleTemplates() {
+            mockTemplates = [...sampleTemplates];
+            console.log('✅ Sample templates loaded');
+        }
+        
+        function clearTemplates() {
+            mockTemplates = [];
+            console.log('🗑️ Templates cleared');
+        }
+        
+        function showTemplateSelector() {
+            createAndShowTemplateSelector(mockTemplates);
+        }
+        
+        function showEmptyTemplateSelector() {
+            createAndShowTemplateSelector([]);
+        }
+        
+        function testMobileView() {
+            document.body.style.maxWidth = '480px';
+            document.body.style.margin = '0 auto';
+            console.log('📱 Mobile view activated');
+        }
+        
+        function testDesktopView() {
+            document.body.style.maxWidth = 'none';
+            document.body.style.margin = '0';
+            console.log('🖥️ Desktop view activated');
+        }
+        
+        function createAndShowTemplateSelector(templates) {
+            const modal = createTemplateSelector(templates);
+            document.body.appendChild(modal);
+            
+            setTimeout(() => {
+                modal.classList.add('show');
+            }, 10);
+            
+            const searchInput = modal.querySelector('.template-search-input');
+            if (searchInput) {
+                setTimeout(() => searchInput.focus(), 300);
+            }
+        }
+        
+        function createTemplateSelector(templates) {
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-container template-selector-modal">
+                    <div class="modal-header">
+                        <h3 class="modal-title">📝 選擇自動提交模板</h3>
+                        <button type="button" class="modal-close-btn" aria-label="關閉">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="template-search-container">
+                            <span class="template-search-icon">🔍</span>
+                            <input type="text" class="template-search-input" placeholder="搜索模板..." />
+                        </div>
+                        <div class="template-grid" id="templateGrid">
+                            ${renderTemplateCards(templates)}
+                        </div>
+                    </div>
+                    <div class="modal-footer template-selector-footer">
+                        <div class="template-selection-info">
+                            <span id="selectedTemplateInfo">請選擇一個模板</span>
+                        </div>
+                        <div class="template-footer-actions">
+                            <button type="button" class="btn btn-secondary" id="templateCancelBtn">取消</button>
+                            <button type="button" class="btn btn-primary" id="templateConfirmBtn" disabled>確認選擇</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            setupTemplateSelectorEvents(modal);
+            return modal;
+        }
+        
+        function renderTemplateCards(templates) {
+            if (!templates || templates.length === 0) {
+                return `
+                    <div class="template-empty-state">
+                        <div class="template-empty-icon">📝</div>
+                        <div>尚無可用模板</div>
+                        <div style="font-size: 12px; margin-top: 8px;">請先在設定中創建模板</div>
+                    </div>
+                `;
+            }
+            
+            return templates.map(template => {
+                const preview = template.content.length > 100 
+                    ? template.content.substring(0, 100) + '...' 
+                    : template.content;
+                
+                return `
+                    <div class="template-card" data-template-id="${template.id}">
+                        <div class="template-card-header">
+                            <h4 class="template-name">${escapeHtml(template.name)}</h4>
+                            ${template.isAutoSubmit ? '<span class="template-auto-submit-badge">自動提交</span>' : ''}
+                        </div>
+                        <div class="template-content-preview">${escapeHtml(preview)}</div>
+                        <div class="template-meta">
+                            <span>長度: ${template.content.length} 字符</span>
+                            <span>創建: ${formatDate(template.createdAt)}</span>
+                        </div>
+                        <div class="template-actions">
+                            <button class="template-preview-btn" data-action="preview">預覽</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function setupTemplateSelectorEvents(modal) {
+            let selectedTemplateId = null;
+            
+            // Close buttons
+            const closeBtn = modal.querySelector('.modal-close-btn');
+            const cancelBtn = modal.querySelector('#templateCancelBtn');
+            
+            [closeBtn, cancelBtn].forEach(btn => {
+                if (btn) {
+                    btn.addEventListener('click', () => {
+                        closeTemplateSelector(modal);
+                    });
+                }
+            });
+            
+            // Click outside to close
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeTemplateSelector(modal);
+                }
+            });
+            
+            // ESC key to close
+            document.addEventListener('keydown', function escapeHandler(e) {
+                if (e.key === 'Escape') {
+                    closeTemplateSelector(modal);
+                    document.removeEventListener('keydown', escapeHandler);
+                }
+            });
+            
+            // Search functionality
+            const searchInput = modal.querySelector('.template-search-input');
+            if (searchInput) {
+                searchInput.addEventListener('input', (e) => {
+                    filterTemplates(modal, e.target.value);
+                });
+            }
+            
+            // Template card selection
+            const templateGrid = modal.querySelector('#templateGrid');
+            if (templateGrid) {
+                templateGrid.addEventListener('click', (e) => {
+                    const card = e.target.closest('.template-card');
+                    if (card) {
+                        if (e.target.classList.contains('template-preview-btn')) {
+                            previewTemplate(card.dataset.templateId);
+                            return;
+                        }
+                        
+                        selectTemplateCard(modal, card);
+                        selectedTemplateId = card.dataset.templateId;
+                    }
+                });
+            }
+            
+            // Confirm button
+            const confirmBtn = modal.querySelector('#templateConfirmBtn');
+            if (confirmBtn) {
+                confirmBtn.addEventListener('click', () => {
+                    if (selectedTemplateId) {
+                        console.log('✅ Template selected:', selectedTemplateId);
+                        closeTemplateSelector(modal);
+                    }
+                });
+            }
+        }
+        
+        function closeTemplateSelector(modal) {
+            modal.classList.remove('show');
+            setTimeout(() => {
+                if (modal.parentNode) {
+                    modal.parentNode.removeChild(modal);
+                }
+            }, 300);
+        }
+        
+        function selectTemplateCard(modal, card) {
+            const allCards = modal.querySelectorAll('.template-card');
+            allCards.forEach(c => c.classList.remove('selected'));
+            
+            card.classList.add('selected');
+            
+            const templateName = card.querySelector('.template-name').textContent;
+            const infoElement = modal.querySelector('#selectedTemplateInfo');
+            if (infoElement) {
+                infoElement.textContent = `已選擇: ${templateName}`;
+            }
+            
+            const confirmBtn = modal.querySelector('#templateConfirmBtn');
+            if (confirmBtn) {
+                confirmBtn.disabled = false;
+            }
+        }
+        
+        function filterTemplates(modal, searchTerm) {
+            const cards = modal.querySelectorAll('.template-card');
+            const searchLower = searchTerm.toLowerCase();
+            
+            cards.forEach(card => {
+                const name = card.querySelector('.template-name').textContent.toLowerCase();
+                const content = card.querySelector('.template-content-preview').textContent.toLowerCase();
+                
+                if (name.includes(searchLower) || content.includes(searchLower)) {
+                    card.style.display = '';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+        
+        function previewTemplate(templateId) {
+            const template = mockTemplates.find(t => t.id === templateId);
+            if (!template) return;
+            
+            const previewModal = document.createElement('div');
+            previewModal.className = 'modal-overlay';
+            previewModal.innerHTML = `
+                <div class="modal-container" style="max-width: 600px;">
+                    <div class="modal-header">
+                        <h3 class="modal-title">📖 模板預覽: ${escapeHtml(template.name)}</h3>
+                        <button type="button" class="modal-close-btn" aria-label="關閉">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <div style="background: var(--bg-tertiary); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color);">
+                            <pre style="white-space: pre-wrap; margin: 0; font-family: inherit; line-height: 1.5;">${escapeHtml(template.content)}</pre>
+                        </div>
+                        <div style="margin-top: 12px; font-size: 12px; color: var(--text-secondary);">
+                            長度: ${template.content.length} 字符 | 創建時間: ${formatDate(template.createdAt)}
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">關閉</button>
+                    </div>
+                </div>
+            `;
+            
+            const closeBtn = previewModal.querySelector('.modal-close-btn');
+            closeBtn.addEventListener('click', () => {
+                previewModal.remove();
+            });
+            
+            previewModal.addEventListener('click', (e) => {
+                if (e.target === previewModal) {
+                    previewModal.remove();
+                }
+            });
+            
+            document.body.appendChild(previewModal);
+            setTimeout(() => previewModal.classList.add('show'), 10);
+        }
+        
+        function formatDate(dateString) {
+            if (!dateString) return '未知';
+            
+            try {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('zh-TW', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit'
+                });
+            } catch (e) {
+                return '未知';
+            }
+        }
+        
+        function escapeHtml(text) {
+            if (!text) return '';
+            
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Initialize with sample data
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSampleTemplates();
+            console.log('✅ Template selector test initialized');
+        });
+    </script>
+</body>
+</html>
