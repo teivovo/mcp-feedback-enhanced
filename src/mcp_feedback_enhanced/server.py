@@ -674,7 +674,15 @@ async def interactive_feedback(
             f.write(f"is_telegram_enabled() = {is_telegram_enabled()}\n")
             f.flush()
 
-        if is_telegram_enabled():
+        # DEBUG: Check if Telegram is enabled in interactive_feedback
+        telegram_enabled = is_telegram_enabled()
+        with open(_telegram_debug_file, 'a', encoding='utf-8') as f:
+            import datetime
+            f.write(f"\n=== INTERACTIVE_FEEDBACK CHECK {datetime.datetime.now()} ===\n")
+            f.write(f"is_telegram_enabled() = {telegram_enabled}\n")
+            f.flush()
+
+        if telegram_enabled:
             router = get_router_integration()
             with open(_telegram_debug_file, 'a', encoding='utf-8') as f:
                 f.write(f"get_router_integration() returned: {router}\n")
