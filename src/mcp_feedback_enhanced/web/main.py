@@ -681,11 +681,13 @@ class WebUIManager:
                 await session.websocket.send_json(
                     {
                         "type": "session_updated",
+                        "action": "new_session_created",  # 🔑 KEY FIX: Add action field
                         "message": "新會話已創建，正在更新頁面內容",
                         "session_info": {
                             "project_directory": session.project_directory,
                             "summary": session.summary,
                             "session_id": session.session_id,
+                            "status": session.status.value,  # Add status field
                         },
                     }
                 )
@@ -732,11 +734,13 @@ class WebUIManager:
                         await old_websocket.send_json(
                             {
                                 "type": "session_updated",
+                                "action": "new_session_created",  # 🔑 KEY FIX: Add action field
                                 "message": "新會話已創建，正在更新頁面內容",
                                 "session_info": {
                                     "project_directory": new_session.project_directory,
                                     "summary": new_session.summary,
                                     "session_id": new_session.session_id,
+                                    "status": new_session.status.value,  # Add status field
                                 },
                             }
                         )

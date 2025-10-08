@@ -697,20 +697,28 @@
      * 處理會話更新（原始版本，供防抖使用）
      */
     FeedbackApp.prototype._originalHandleSessionUpdated = function(data) {
-        console.log('🔄 處理會話更新:', data.session_info);
+        console.log('🔄 處理會話更新:', data);
+        console.log('🔍 檢查 action 字段:', data.action);
 
-        // 播放音效通知
-        if (this.audioManager) {
-            this.audioManager.playNotification();
-        }
+        // 檢查是否是新會話創建的通知
+        if (data.action === 'new_session_created' || data.type === 'new_session_created') {
+            console.log('🆕 檢測到新會話創建，強制重置狀態');
 
-        // 顯示更新通知
-        window.MCPFeedback.Utils.showMessage(data.message || '會話已更新，正在局部更新內容...', window.MCPFeedback.Utils.CONSTANTS.MESSAGE_SUCCESS);
+            // 播放音效通知
+            if (this.audioManager) {
+                this.audioManager.playNotification();
+            }
 
-        // 更新會話信息
-        if (data.session_info) {
-            const newSessionId = data.session_info.session_id;
-            console.log('📋 會話 ID 更新: ' + this.currentSessionId + ' -> ' + newSessionId);
+            // 顯示更新通知
+            window.MCPFeedback.Utils.showMessage(
+                data.message || '新會話已創建，正在更新頁面內容...',
+                window.MCPFeedback.Utils.CONSTANTS.MESSAGE_SUCCESS
+            );
+
+            // 更新會話信息
+            if (data.session_info) {
+                const newSessionId = data.session_info.session_id;
+                console.log('📋 新會話 ID:', newSessionId);
 
             // 保存舊會話到歷史記錄（在更新當前會話之前）
             if (this.currentSessionId && this.sessionManager && this.currentSessionId !== newSessionId) {
@@ -773,8 +781,13 @@
                 }
             }
 
-            // 重置回饋狀態為等待新回饋
+            // 強制重置回饋狀態為等待新回饋（清除任何 SUBMITTED 狀態）
+            console.log('🔄 強制重置回饋狀態為 WAITING');
             this.uiManager.setFeedbackState(window.MCPFeedback.Utils.CONSTANTS.FEEDBACK_WAITING, newSessionId);
+
+            // 清空表單
+            console.log('🔄 清空回饋表單');
+            this.uiManager.resetFeedbackForm();
 
             // 檢查並啟動自動提交（如果條件滿足）
             const self = this;
@@ -790,6 +803,27 @@
 
             // 使用局部更新替代整頁刷新
             this.refreshPageContent();
+
+            console.log('✅ 新會話創建處理完成');
+            return; // 提前返回，不執行後續的局部更新邏輯
+        }
+
+        // 如果不是新會話創建，則是普通的頁面刷新
+        // 在這種情況下，我們應該保護 SUBMITTED 狀態
+        console.log('🔄 普通頁面刷新，保護已提交狀態');
+
+        if (data.session_info) {
+            const currentState = this.uiManager.getFeedbackState();
+            if (currentState !== window.MCPFeedback.Utils.CONSTANTS.FEEDBACK_SUBMITTED) {
+                // 只有在非 SUBMITTED 狀態時才重置
+                this.uiManager.setFeedbackState(
+                    window.MCPFeedback.Utils.CONSTANTS.FEEDBACK_WAITING,
+                    data.session_info.session_id
+                );
+                console.log('🔄 重置回饋狀態為 WAITING');
+            } else {
+                console.log('🔒 保護已提交狀態，不重置');
+            }
         } else {
             console.log('⚠️ 會話更新沒有包含會話信息，僅重置狀態');
             this.uiManager.setFeedbackState(window.MCPFeedback.Utils.CONSTANTS.FEEDBACK_WAITING);
@@ -840,9 +874,11 @@
 
             case 'active':
             case 'waiting':
-                // 檢查是否是新會話
+                // 檢查是否是新會話 - 如果是新會話，ALWAYS重置狀態
                 if (sessionId && sessionId !== this.currentSessionId) {
+                    console.log('🔄 新會話檢測到，強制重置狀態為 WAITING');
                     this.uiManager.setFeedbackState(window.MCPFeedback.Utils.CONSTANTS.FEEDBACK_WAITING, sessionId);
+                    this.currentSessionId = sessionId;
                 } else if (this.uiManager.getFeedbackState() !== window.MCPFeedback.Utils.CONSTANTS.FEEDBACK_SUBMITTED) {
                     this.uiManager.setFeedbackState(window.MCPFeedback.Utils.CONSTANTS.FEEDBACK_WAITING, sessionId);
                 }
