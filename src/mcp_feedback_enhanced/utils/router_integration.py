@@ -77,23 +77,42 @@ class RouterIntegration:
     def ensure_router_running(self) -> bool:
         """
         Ensure router is running, start if needed.
-        
+
         Returns:
             True if router is running, False otherwise
         """
+        debug_log("[ROUTER] ensure_router_running() called")
+
         if not self.router_manager:
             debug_log("[ROUTER] ERROR: RouterManager not available")
+            print("[ROUTER] ERROR: RouterManager not available", file=sys.stderr, flush=True)
             return False
-        
+
+        debug_log(f"[ROUTER] RouterManager available: {self.router_manager}")
+        print(f"[ROUTER] RouterManager available: {self.router_manager}", file=sys.stderr, flush=True)
+
         try:
+            debug_log("[ROUTER] Calling router_manager.ensure_router_available()...")
+            print("[ROUTER] Calling router_manager.ensure_router_available()...", file=sys.stderr, flush=True)
+
             result = self.router_manager.ensure_router_available()
+
+            debug_log(f"[ROUTER] ensure_router_available() returned: {result}")
+            print(f"[ROUTER] ensure_router_available() returned: {result}", file=sys.stderr, flush=True)
+
             if result:
                 debug_log("[ROUTER] ✅ Router is running")
+                print("[ROUTER] ✅ Router is running", file=sys.stderr, flush=True)
             else:
                 debug_log("[ROUTER] ❌ Failed to start router")
+                print("[ROUTER] ❌ Failed to start router", file=sys.stderr, flush=True)
             return result
         except Exception as e:
             debug_log(f"[ROUTER] ERROR ensuring router running: {e}")
+            print(f"[ROUTER] ERROR ensuring router running: {e}", file=sys.stderr, flush=True)
+            import traceback
+            debug_log(f"[ROUTER] Traceback: {traceback.format_exc()}")
+            print(f"[ROUTER] Traceback: {traceback.format_exc()}", file=sys.stderr, flush=True)
             return False
     
     def register_instance(self) -> bool:

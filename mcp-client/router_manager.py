@@ -60,24 +60,19 @@ class RouterManager:
         
         try:
             # Start router as subprocess
+            # TEMPORARY DEBUG: Don't pipe stdout/stderr to see error messages
             if sys.platform == 'win32':
                 # Windows: Use CREATE_NEW_PROCESS_GROUP to allow clean shutdown
                 self.router_process = subprocess.Popen(
                     ['node', 'telegram-router.js'],
                     cwd=str(self.router_dir),
-                    creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True
+                    creationflags=subprocess.CREATE_NEW_PROCESS_GROUP
                 )
             else:
                 # Unix: Standard subprocess
                 self.router_process = subprocess.Popen(
                     ['node', 'telegram-router.js'],
-                    cwd=str(self.router_dir),
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True
+                    cwd=str(self.router_dir)
                 )
             
             # Wait for router to start
