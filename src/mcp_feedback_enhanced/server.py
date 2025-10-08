@@ -154,6 +154,50 @@ REMOTE_ENV_VARS = ["REMOTE_CONTAINERS", "CODESPACES"]
 # 初始化 MCP 服務器
 from . import __version__
 
+# Initialize config manager BEFORE FastMCP lifespan runs
+# This must be at module level so server_lifespan() can access it
+from pathlib import Path
+import os
+
+# Try multiple paths to find mcp_config.json
+_config_file_path = None
+_possible_paths = [
+    Path(__file__).parent.parent.parent / "mcp_config.json",  # Development: src/mcp_feedback_enhanced/server.py -> project root
+    Path.cwd() / "mcp_config.json",  # Current working directory
+    Path(os.path.expanduser("~")) / ".mcp_feedback" / "mcp_config.json",  # User home directory
+]
+
+for path in _possible_paths:
+    if path.exists():
+        _config_file_path = path
+        break
+
+if _config_file_path is None:
+    # Fallback: use project root path and let ConfigManager create it
+    _config_file_path = Path(__file__).parent.parent.parent / "mcp_config.json"
+
+# Debug: Log the config file path being used - WRITE TO FILE TO BYPASS STDERR CAPTURE
+_debug_file = Path(__file__).parent.parent.parent / "logs" / "module_init_debug.log"
+_debug_file.parent.mkdir(exist_ok=True)
+with open(_debug_file, 'a', encoding='utf-8') as f:
+    import datetime
+    f.write(f"\n=== MODULE INIT {datetime.datetime.now()} ===\n")
+    f.write(f"CWD: {Path.cwd()}\n")
+    f.write(f"__file__: {__file__}\n")
+    f.write(f"Config file path: {_config_file_path}\n")
+    f.write(f"Config file exists: {_config_file_path.exists()}\n")
+    f.flush()
+
+_config_manager = initialize_config_manager(
+    config_file=str(_config_file_path),
+    enable_encryption=True,
+    auto_save=True
+)
+
+with open(_debug_file, 'a', encoding='utf-8') as f:
+    f.write(f"Config manager initialized: {_config_manager}\n")
+    f.write(f"Telegram enabled: {_config_manager.is_telegram_enabled() if _config_manager else 'None'}\n")
+    f.flush()
 
 # 確保 log_level 設定為正確的大寫格式
 fastmcp_settings = {}
@@ -166,8 +210,9 @@ else:
     # 預設使用 INFO 等級
     fastmcp_settings["log_level"] = "INFO"
 
-# Note: lifespan will be set after it's defined (see server_lifespan function below)
-mcp: Any = FastMCP(SERVER_NAME)
+# Note: lifespan is provided at construction so FastMCP binds it properly
+mcp: Any = FastMCP(SERVER_NAME, lifespan=lambda app: server_lifespan(app))
+
 
 # 初始化規則引擎
 _rules_engine = None
@@ -619,8 +664,22 @@ async def interactive_feedback(
 
         # 發送 Telegram 通知（通過 Router 路由）
         telegram_notification_sent = False
+
+        # FILE-BASED DEBUG TO BYPASS STDERR CAPTURE
+        _telegram_debug_file = Path(__file__).parent.parent.parent / "logs" / "telegram_debug.log"
+        _telegram_debug_file.parent.mkdir(exist_ok=True)
+        with open(_telegram_debug_file, 'a', encoding='utf-8') as f:
+            import datetime
+            f.write(f"\n=== TELEGRAM CHECK {datetime.datetime.now()} ===\n")
+            f.write(f"is_telegram_enabled() = {is_telegram_enabled()}\n")
+            f.flush()
+
         if is_telegram_enabled():
             router = get_router_integration()
+            with open(_telegram_debug_file, 'a', encoding='utf-8') as f:
+                f.write(f"get_router_integration() returned: {router}\n")
+                f.write(f"_router_integration global: {_router_integration}\n")
+                f.flush()
             if router:
                 try:
                     # Format message for Telegram with Markdown
@@ -999,7 +1058,7 @@ def reload_server() -> str:
 
     此開發工具觸發伺服器實現的熱重載，允許快速測試程式碼變更而無需重新連接 VS Code。
 
-    僅在開發模式下工作（--dev-mode 標誌）。在生產模式下，此工具返回錯誤訊息。
+    僅在開發模式下工作（需設置 MCP_DEV_MODE=true 環境變數）。在生產模式下，此工具返回錯誤訊息。
 
     Returns:
         str: 指示重載成功或失敗的狀態訊息
@@ -1015,7 +1074,7 @@ def reload_server() -> str:
         dev_mode = os.environ.get("MCP_DEV_MODE", "").lower() == "true"
 
         if not dev_mode:
-            result = "錯誤: reload_server() 僅在開發模式下工作。請使用 --dev-mode 標誌啟動伺服器。"
+            result = "錯誤: reload_server() 僅在開發模式下工作。請設置環境變數 MCP_DEV_MODE=true 啟動伺服器。"
 
             # MCP 日誌記錄 - 工具調用完成（非開發模式）
             log_tool_end(call_id, response_data={
@@ -1098,6 +1157,16 @@ async def server_lifespan(mcp_instance: FastMCP) -> AsyncIterator[dict[str, Any]
     print("[LIFESPAN] Server starting up...", file=sys.stderr, flush=True)
     debug_log("[LIFESPAN] Server starting up...")
 
+    # Debug: Check config manager state
+    config_mgr = get_config_manager()
+    print(f"[LIFESPAN] Config manager: {config_mgr}", file=sys.stderr, flush=True)
+    debug_log(f"[LIFESPAN] Config manager: {config_mgr}")
+
+    if config_mgr:
+        telegram_enabled = is_telegram_enabled()
+        print(f"[LIFESPAN] is_telegram_enabled() = {telegram_enabled}", file=sys.stderr, flush=True)
+        debug_log(f"[LIFESPAN] is_telegram_enabled() = {telegram_enabled}")
+
     # Initialize router integration if Telegram is enabled
     if is_telegram_enabled():
         print("[LIFESPAN] Telegram is enabled", file=sys.stderr, flush=True)
@@ -1153,9 +1222,6 @@ async def server_lifespan(mcp_instance: FastMCP) -> AsyncIterator[dict[str, Any]
             debug_log("[LIFESPAN] Deregistered from router")
 
 
-# Set the lifespan on the mcp instance
-mcp.lifespan = server_lifespan
-
 
 # ===== 主程式入口 =====
 def main():
@@ -1171,18 +1237,8 @@ def main():
         "on",
     )
 
-    # 初始化配置管理器 (ALWAYS, not just in debug mode) - FIX: Moved outside debug block
-    # Use absolute path to config file relative to module location
-    from pathlib import Path
-    
-    # Config file in project root (3 parent levels up from this file)
-    config_file_path = Path(__file__).parent.parent.parent / "mcp_config.json"
-    
-    config_manager = initialize_config_manager(
-        config_file=str(config_file_path),
-        enable_encryption=True,
-        auto_save=True
-    )
+    # Config manager already initialized at module level
+    config_manager = get_config_manager()
 
     # 初始化 MCP 日誌中間件 (ALWAYS) - FIX: Moved outside debug block
     from .utils.logging_middleware import initialize_middleware

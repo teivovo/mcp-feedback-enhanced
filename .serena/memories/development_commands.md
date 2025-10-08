@@ -13,9 +13,9 @@ make test-fast                    # Fast testing (skip slow tests)
 make test-cov                     # Test with coverage report
 
 # Direct commands
-uv run python -m mcp_feedback_enhanced test              # Standard functional testing
-uvx --no-cache --with-editable . mcp-feedback-enhanced test --web   # Web UI testing
-uvx --no-cache --with-editable . mcp-feedback-enhanced test --desktop # Desktop testing
+python -m mcp_feedback_enhanced test              # Standard functional testing
+python -m mcp_feedback_enhanced test --web        # Web UI testing
+python -m mcp_feedback_enhanced test --desktop    # Desktop testing
 ```
 
 ## Code Quality

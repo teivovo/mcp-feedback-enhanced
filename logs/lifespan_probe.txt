@@ -1,0 +1,3 @@
+[TEST] before context
+[TEST] inside context
+[TEST] after context
