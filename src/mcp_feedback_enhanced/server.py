@@ -30,6 +30,8 @@ import json
 import os
 import sys
 import time
+from contextlib import asynccontextmanager
+from collections.abc import AsyncIterator
 from typing import Annotated, Any, Optional
 
 from fastmcp import FastMCP
@@ -164,6 +166,7 @@ else:
     # 預設使用 INFO 等級
     fastmcp_settings["log_level"] = "INFO"
 
+# Note: lifespan will be set after it's defined (see server_lifespan function below)
 mcp: Any = FastMCP(SERVER_NAME)
 
 # 初始化規則引擎
@@ -1078,6 +1081,82 @@ def get_router_integration() -> Optional[RouterIntegration]:
     return _router_integration
 
 
+# ===== Lifespan Management =====
+@asynccontextmanager
+async def server_lifespan(mcp_instance: FastMCP) -> AsyncIterator[dict[str, Any]]:
+    """
+    Manage server startup and shutdown lifecycle.
+
+    This function is called by FastMCP during server initialization.
+    It handles:
+    - Router startup and registration
+    - Resource initialization
+    - Cleanup on shutdown
+    """
+    global _router_integration
+
+    print("[LIFESPAN] Server starting up...", file=sys.stderr, flush=True)
+    debug_log("[LIFESPAN] Server starting up...")
+
+    # Initialize router integration if Telegram is enabled
+    if is_telegram_enabled():
+        print("[LIFESPAN] Telegram is enabled", file=sys.stderr, flush=True)
+        debug_log("[LIFESPAN] Telegram is enabled")
+
+        config_manager = get_config_manager()
+        telegram_config = config_manager.get_telegram_config()
+
+        if telegram_config.enabled:
+            debug_log("[LIFESPAN] Telegram config enabled")
+            try:
+                # Get web UI port for callback URL
+                web_port = int(os.getenv('MCP_WEB_PORT', '8765'))
+                debug_log(f"[LIFESPAN] Web port: {web_port}")
+
+                _router_integration = RouterIntegration(
+                    router_url=os.getenv('ROUTER_URL', 'http://localhost:8080'),
+                    instance_name=f"MCP-Feedback-{web_port}",
+                    callback_port=web_port
+                )
+                debug_log("[LIFESPAN] RouterIntegration created")
+
+                # Start router and register
+                if _router_integration.register_instance():
+                    debug_log("✅ [LIFESPAN] Registered successfully")
+                    print("[LIFESPAN] ✅ Router registered successfully", file=sys.stderr, flush=True)
+                else:
+                    debug_log("⚠️ [LIFESPAN] Registration failed")
+                    print("[LIFESPAN] ⚠️ Router registration failed", file=sys.stderr, flush=True)
+                    _router_integration = None
+            except Exception as e:
+                debug_log(f"❌ [LIFESPAN] Exception: {e}")
+                print(f"[LIFESPAN] ❌ Exception: {e}", file=sys.stderr, flush=True)
+                import traceback
+                debug_log(f"[LIFESPAN] Traceback: {traceback.format_exc()}")
+                _router_integration = None
+        else:
+            debug_log("[LIFESPAN] Telegram config disabled")
+    else:
+        debug_log("[LIFESPAN] Telegram not enabled")
+
+    # Yield control to the server
+    try:
+        yield {"router": _router_integration}
+    finally:
+        # Cleanup on shutdown
+        print("[LIFESPAN] Server shutting down...", file=sys.stderr, flush=True)
+        debug_log("[LIFESPAN] Server shutting down...")
+
+        if _router_integration:
+            debug_log("[LIFESPAN] Deregistering from router...")
+            _router_integration.deregister_instance()
+            debug_log("[LIFESPAN] Deregistered from router")
+
+
+# Set the lifespan on the mcp instance
+mcp.lifespan = server_lifespan
+
+
 # ===== 主程式入口 =====
 def main():
     """主要入口點，用於套件執行"""
@@ -1117,33 +1196,8 @@ def main():
     }
     middleware = initialize_middleware(middleware_config)
 
-    # Initialize Telegram Router integration if enabled
-    global _router_integration
-    if is_telegram_enabled():
-        telegram_config = config_manager.get_telegram_config()
-        if telegram_config.enabled:
-            try:
-                # Get web UI port for callback URL
-                web_port = int(os.getenv('MCP_WEB_PORT', '8765'))
-
-                _router_integration = RouterIntegration(
-                    router_url=os.getenv('ROUTER_URL', 'http://localhost:8080'),
-                    instance_name=f"MCP-Feedback-{web_port}",
-                    callback_port=web_port
-                )
-
-                # Start router and register
-                if _router_integration.register_instance():
-                    if debug_enabled:
-                        debug_log("✅ Telegram Router: Registered successfully")
-                else:
-                    if debug_enabled:
-                        debug_log("⚠️ Telegram Router: Registration failed")
-                    _router_integration = None
-            except Exception as e:
-                if debug_enabled:
-                    debug_log(f"❌ Telegram Router initialization failed: {e}")
-                _router_integration = None
+    # Router initialization is now handled by the lifespan function
+    # (see server_lifespan function above)
 
     if debug_enabled:
         debug_log("🚀 啟動互動式回饋收集 MCP 服務器")
