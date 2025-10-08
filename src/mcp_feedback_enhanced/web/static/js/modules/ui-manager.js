@@ -98,13 +98,41 @@
      */
     UIManager.prototype.initTabs = function() {
         const self = this;
-        
+
+        // 重新查詢頁籤元素以確保它們存在
+        this.tabButtons = document.querySelectorAll('.tab-button');
+        this.tabContents = document.querySelectorAll('.tab-content');
+
+        console.log('🔍 找到頁籤按鈕數量:', this.tabButtons.length);
+        console.log('🔍 找到頁籤內容數量:', this.tabContents.length);
+
+        // 檢查是否找到頁籤按鈕
+        if (this.tabButtons.length === 0) {
+            console.error('❌ 未找到任何頁籤按鈕 (.tab-button)');
+            return;
+        }
+
         // 設置頁籤點擊事件
-        this.tabButtons.forEach(function(button) {
-            button.addEventListener('click', function() {
+        this.tabButtons.forEach(function(button, index) {
+            console.log('🔧 為頁籤按鈕設置事件監聽器:', button.getAttribute('data-tab'), index);
+
+            // 移除可能存在的舊事件監聽器
+            button.removeEventListener('click', self._tabClickHandler);
+
+            // 創建新的事件處理器
+            const clickHandler = function(event) {
+                event.preventDefault();
+                event.stopPropagation();
                 const tabName = button.getAttribute('data-tab');
+                console.log('🖱️ 頁籤按鈕被點擊:', tabName);
                 self.switchTab(tabName);
-            });
+            };
+
+            // 添加事件監聽器
+            button.addEventListener('click', clickHandler);
+
+            // 儲存處理器以便後續移除
+            button._tabClickHandler = clickHandler;
         });
 
         // 根據佈局模式確定初始頁籤
@@ -117,6 +145,8 @@
 
         // 設置初始頁籤
         this.setInitialTab(initialTab);
+
+        console.log('✅ 頁籤功能初始化完成');
     };
 
     /**
@@ -133,39 +163,76 @@
      * 切換頁籤
      */
     UIManager.prototype.switchTab = function(tabName) {
+        console.log('🔄 開始切換頁籤:', tabName);
+
+        if (!tabName) {
+            console.error('❌ 頁籤名稱為空');
+            return;
+        }
+
         this.currentTab = tabName;
         this.updateTabDisplay(tabName);
         this.handleSpecialTabs(tabName);
-        
+
         // 觸發回調
         if (this.onTabChange) {
             this.onTabChange(tabName);
         }
-        
-        console.log('切換到頁籤: ' + tabName);
+
+        console.log('✅ 成功切換到頁籤:', tabName);
+    };
+
+    /**
+     * 重新初始化頁籤（用於故障排除）
+     */
+    UIManager.prototype.reinitializeTabs = function() {
+        console.log('🔄 重新初始化頁籤...');
+        this.initTabs();
     };
 
     /**
      * 更新頁籤顯示
      */
     UIManager.prototype.updateTabDisplay = function(tabName) {
+        console.log('🎨 更新頁籤顯示:', tabName);
+
+        // 重新查詢元素以確保最新狀態
+        this.tabButtons = document.querySelectorAll('.tab-button');
+        this.tabContents = document.querySelectorAll('.tab-content');
+
         // 更新按鈕狀態
+        let activeButtonFound = false;
         this.tabButtons.forEach(function(button) {
-            if (button.getAttribute('data-tab') === tabName) {
+            const buttonTab = button.getAttribute('data-tab');
+            if (buttonTab === tabName) {
                 button.classList.add('active');
+                activeButtonFound = true;
+                console.log('✅ 激活頁籤按鈕:', buttonTab);
             } else {
                 button.classList.remove('active');
             }
         });
 
+        if (!activeButtonFound) {
+            console.warn('⚠️ 未找到對應的頁籤按鈕:', tabName);
+        }
+
         // 更新內容顯示
+        let activeContentFound = false;
         this.tabContents.forEach(function(content) {
-            if (content.id === 'tab-' + tabName) {
+            const contentId = 'tab-' + tabName;
+            if (content.id === contentId) {
                 content.classList.add('active');
+                activeContentFound = true;
+                console.log('✅ 顯示頁籤內容:', contentId);
             } else {
                 content.classList.remove('active');
             }
         });
+
+        if (!activeContentFound) {
+            console.warn('⚠️ 未找到對應的頁籤內容:', 'tab-' + tabName);
+        }
     };
 
     /**
@@ -803,6 +870,48 @@
 
     // 將 UIManager 加入命名空間
     window.MCPFeedback.UIManager = UIManager;
+
+    // 添加全局調試函數
+    window.debugTabs = function() {
+        console.log('🔍 調試頁籤狀態...');
+
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        console.log('頁籤按鈕數量:', tabButtons.length);
+        tabButtons.forEach(function(button, index) {
+            console.log('按鈕 ' + index + ':', {
+                'data-tab': button.getAttribute('data-tab'),
+                'active': button.classList.contains('active'),
+                'visible': button.offsetParent !== null,
+                'clickable': window.getComputedStyle(button).pointerEvents !== 'none'
+            });
+        });
+
+        console.log('頁籤內容數量:', tabContents.length);
+        tabContents.forEach(function(content, index) {
+            console.log('內容 ' + index + ':', {
+                'id': content.id,
+                'active': content.classList.contains('active'),
+                'visible': content.offsetParent !== null
+            });
+        });
+
+        // 測試點擊第一個按鈕
+        if (tabButtons.length > 0) {
+            console.log('🧪 測試點擊第一個按鈕...');
+            tabButtons[0].click();
+        }
+    };
+
+    window.reinitTabs = function() {
+        if (window.app && window.app.uiManager) {
+            console.log('🔄 重新初始化頁籤...');
+            window.app.uiManager.reinitializeTabs();
+        } else {
+            console.error('❌ 找不到應用程式或 UI 管理器');
+        }
+    };
 
     console.log('✅ UIManager 模組載入完成');
 

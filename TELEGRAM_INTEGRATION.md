@@ -17,10 +17,10 @@ VSCode Extension ↔ MCP Server ↔ Telegram Bridge ↔ Telegram Bot ↔ User Ch
 - **Features**: Rate limiting, message chunking, webhook support, connection management
 - **Key Methods**: `send_message()`, `start()`, `stop()`, `test_connection()`
 
-### 2. MCP-Telegram Bridge (`src/mcp_feedback_enhanced/utils/mcp_telegram_bridge.py`)
-- **Purpose**: Correlates MCP calls with Telegram sessions
-- **Features**: Session management, message correlation, auto-forwarding, bidirectional flow
-- **Key Methods**: `create_session()`, `send_mcp_message_to_telegram()`, `get_bridge_status()`
+### 2. Direct Telegram Integration (Bridge System Removed)
+- **Purpose**: Simple, reliable one-way notifications to Telegram
+- **Features**: Direct API calls, configuration testing, message formatting
+- **Key Functions**: `send_telegram_notification()`, `test_telegram_connection()`
 
 ### 3. Message Chunking System (`src/mcp_feedback_enhanced/utils/message_chunker.py`)
 - **Purpose**: Intelligently splits long messages for Telegram's 4096 character limit
@@ -110,15 +110,12 @@ MCP_WEB_UI_PORT="8080"
 
 ### Basic Integration
 ```python
-from mcp_feedback_enhanced.utils.mcp_telegram_bridge import get_bridge
+from mcp_feedback_enhanced.utils.telegram_manager import send_telegram_notification
 
-# Send message to Telegram
-bridge = get_bridge()
-await bridge.send_mcp_message_to_telegram(
-    session_id="session_123",
-    mcp_call_id="call_456",
-    message="Hello from MCP!",
-    metadata={"source": "vscode"}
+# Send notification to Telegram
+success = await send_telegram_notification(
+    summary="Hello from MCP!",
+    project_directory="/path/to/project"
 )
 ```
 
@@ -151,15 +148,13 @@ config.update_telegram_config(
 ```
 src/mcp_feedback_enhanced/
 ├── utils/
-│   ├── telegram_manager.py          # Telegram Bot API interface
-│   ├── mcp_telegram_bridge.py       # MCP-Telegram correlation
+│   ├── telegram_manager.py          # Telegram Bot API interface (with direct notifications)
 │   ├── message_chunker.py           # Message splitting logic
 │   ├── config_manager.py            # Configuration management
 │   └── logging_middleware.py        # Event tracking
 ├── web/
-│   ├── routes/telegram_routes.py    # Dashboard API routes
-│   └── templates/telegram_dashboard.html  # Dashboard UI
-└── server.py                        # Main server integration
+│   └── routes/telegram_routes.py    # Simplified API routes (test connection)
+└── server.py                        # Main server integration (direct API calls)
 ```
 
 ## Testing

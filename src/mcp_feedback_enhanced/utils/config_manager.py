@@ -572,6 +572,25 @@ class ConfigManager:
     
     def is_telegram_enabled(self) -> bool:
         """Check if Telegram integration is enabled and properly configured"""
+        # DIAGNOSTIC LOGGING
+        from pathlib import Path
+        from datetime import datetime
+        try:
+            log_file = Path(__file__).parent.parent.parent.parent / "telegram_diagnostic.log"
+            with open(log_file, "a", encoding="utf-8") as f:
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+                f.write(f"[{timestamp}] ConfigManager.is_telegram_enabled() called\n")
+                f.write(f"[{timestamp}]   self.config.telegram.enabled = {self.config.telegram.enabled}\n")
+                f.write(f"[{timestamp}]   self.config.telegram.bot_token exists = {bool(self.config.telegram.bot_token)}\n")
+                f.write(f"[{timestamp}]   self.config.telegram.chat_id = {self.config.telegram.chat_id}\n")
+                result = (self.config.telegram.enabled and 
+                         bool(self.config.telegram.bot_token) and 
+                         bool(self.config.telegram.chat_id))
+                f.write(f"[{timestamp}]   RESULT = {result}\n")
+                f.flush()
+        except:
+            pass
+        
         return (self.config.telegram.enabled and 
                 bool(self.config.telegram.bot_token) and 
                 bool(self.config.telegram.chat_id))

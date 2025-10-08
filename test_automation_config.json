@@ -1,0 +1,254 @@
+{
+  "execution": {
+    "parallel_execution": true,
+    "max_workers": 3,
+    "continue_on_failure": true,
+    "timeout_multiplier": 1.0,
+    "retry_failed_tests": false,
+    "retry_attempts": 2,
+    "cleanup_on_failure": true,
+    "environment_setup": {
+      "create_temp_directories": true,
+      "cleanup_temp_files": true,
+      "set_environment_variables": {
+        "PYTHONPATH": ".",
+        "TEST_MODE": "automated"
+      }
+    }
+  },
+  "reporting": {
+    "formats": ["json", "html", "markdown"],
+    "output_directory": "./test_reports",
+    "include_performance_metrics": true,
+    "include_coverage_analysis": false,
+    "generate_recommendations": true,
+    "archive_reports": true,
+    "max_archived_reports": 50,
+    "report_templates": {
+      "html_template": "default",
+      "css_theme": "modern",
+      "include_charts": true,
+      "include_trends": true
+    }
+  },
+  "ci_cd": {
+    "exit_on_failure": true,
+    "generate_junit_xml": true,
+    "upload_artifacts": false,
+    "notify_on_failure": false,
+    "integration": {
+      "github_actions": {
+        "enabled": false,
+        "workflow_file": ".github/workflows/tests.yml",
+        "artifact_retention_days": 30
+      },
+      "jenkins": {
+        "enabled": false,
+        "job_name": "automated-tests",
+        "build_triggers": ["push", "pull_request"]
+      },
+      "azure_devops": {
+        "enabled": false,
+        "pipeline_name": "test-pipeline",
+        "publish_results": true
+      }
+    }
+  },
+  "quality_gates": {
+    "minimum_pass_rate": 95.0,
+    "maximum_performance_degradation": 20.0,
+    "required_coverage": 80.0,
+    "critical_suites": ["backend", "frontend", "api"],
+    "performance_thresholds": {
+      "backend_rule_evaluation_ms": 1.0,
+      "api_response_time_ms": 100.0,
+      "integration_workflow_ms": 500.0,
+      "memory_usage_mb": 5.0
+    },
+    "failure_tolerance": {
+      "allow_non_critical_failures": true,
+      "max_consecutive_failures": 3,
+      "failure_rate_threshold": 10.0
+    }
+  },
+  "test_suites": {
+    "backend": {
+      "enabled": true,
+      "priority": 1,
+      "timeout": 300,
+      "retry_on_failure": true,
+      "dependencies": [],
+      "environment": {
+        "python_path": ".",
+        "test_data_dir": "./test_data",
+        "temp_storage_dir": "./temp_backend"
+      },
+      "performance_targets": {
+        "rule_evaluation_ms": 1.0,
+        "storage_operations_ms": 50.0,
+        "memory_usage_mb": 5.0
+      }
+    },
+    "frontend": {
+      "enabled": true,
+      "priority": 1,
+      "timeout": 180,
+      "retry_on_failure": true,
+      "dependencies": [],
+      "environment": {
+        "browser": "headless",
+        "viewport": "1920x1080",
+        "test_data_dir": "./test_data"
+      },
+      "performance_targets": {
+        "ui_rendering_ms": 100.0,
+        "interaction_response_ms": 50.0
+      }
+    },
+    "api": {
+      "enabled": true,
+      "priority": 1,
+      "timeout": 120,
+      "retry_on_failure": true,
+      "dependencies": [],
+      "environment": {
+        "base_url": "http://localhost:8000",
+        "test_data_dir": "./test_data"
+      },
+      "performance_targets": {
+        "response_time_ms": 100.0,
+        "throughput_rps": 50.0,
+        "concurrent_success_rate": 95.0
+      }
+    },
+    "integration": {
+      "enabled": true,
+      "priority": 2,
+      "timeout": 300,
+      "retry_on_failure": false,
+      "dependencies": ["backend", "frontend", "api"],
+      "environment": {
+        "full_system_test": true,
+        "test_data_dir": "./test_data"
+      },
+      "performance_targets": {
+        "end_to_end_workflow_ms": 500.0,
+        "cross_component_latency_ms": 50.0
+      }
+    },
+    "performance": {
+      "enabled": true,
+      "priority": 3,
+      "timeout": 600,
+      "retry_on_failure": false,
+      "dependencies": ["backend", "api"],
+      "environment": {
+        "performance_mode": true,
+        "large_dataset_testing": true,
+        "stress_testing": false
+      },
+      "performance_targets": {
+        "scalability_factor": 2.0,
+        "memory_leak_threshold_mb": 2.0,
+        "concurrent_user_limit": 20
+      }
+    }
+  },
+  "notifications": {
+    "enabled": false,
+    "channels": {
+      "email": {
+        "enabled": false,
+        "recipients": ["team@example.com"],
+        "smtp_server": "smtp.example.com",
+        "smtp_port": 587,
+        "use_tls": true
+      },
+      "slack": {
+        "enabled": false,
+        "webhook_url": "",
+        "channel": "#test-results",
+        "mention_on_failure": true
+      },
+      "teams": {
+        "enabled": false,
+        "webhook_url": "",
+        "card_theme": "default"
+      }
+    },
+    "triggers": {
+      "on_failure": true,
+      "on_success": false,
+      "on_quality_gate_failure": true,
+      "on_performance_regression": true
+    }
+  },
+  "monitoring": {
+    "enabled": true,
+    "metrics_collection": {
+      "execution_time": true,
+      "memory_usage": true,
+      "cpu_usage": false,
+      "disk_io": false,
+      "network_io": false
+    },
+    "alerting": {
+      "enabled": false,
+      "thresholds": {
+        "execution_time_increase_percent": 50.0,
+        "memory_usage_increase_mb": 10.0,
+        "failure_rate_percent": 15.0
+      }
+    },
+    "trending": {
+      "enabled": true,
+      "history_retention_days": 90,
+      "trend_analysis": true,
+      "regression_detection": true
+    }
+  },
+  "security": {
+    "enabled": false,
+    "vulnerability_scanning": {
+      "enabled": false,
+      "tools": ["bandit", "safety"],
+      "fail_on_high_severity": true
+    },
+    "dependency_checking": {
+      "enabled": false,
+      "check_outdated": true,
+      "security_advisories": true
+    },
+    "code_analysis": {
+      "enabled": false,
+      "static_analysis": true,
+      "code_quality_gates": true
+    }
+  },
+  "debugging": {
+    "verbose_output": false,
+    "debug_mode": false,
+    "capture_screenshots": false,
+    "save_test_artifacts": true,
+    "log_level": "INFO",
+    "preserve_test_data": false,
+    "profiling": {
+      "enabled": false,
+      "profile_performance_tests": true,
+      "memory_profiling": false,
+      "cpu_profiling": false
+    }
+  },
+  "experimental": {
+    "enabled": false,
+    "features": {
+      "ai_test_analysis": false,
+      "predictive_failure_detection": false,
+      "auto_test_generation": false,
+      "smart_test_selection": false
+    }
+  },
+  "version": "1.0.0",
+  "last_updated": "2025-01-05T10:00:00Z",
+  "schema_version": "1.0"
+}

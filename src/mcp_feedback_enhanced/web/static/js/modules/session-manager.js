@@ -819,8 +819,9 @@
      * 專案上下文管理器
      */
     function ProjectContextManager() {
-        this.currentProject = this.initializeCurrentProject();
+        // 先初始化專案歷史，再初始化當前專案
         this.projectHistory = this.loadProjectHistory();
+        this.currentProject = this.initializeCurrentProject();
     }
 
     /**
@@ -959,6 +960,12 @@
      * 添加到專案歷史
      */
     ProjectContextManager.prototype.addToProjectHistory = function(project) {
+        // 確保 projectHistory 是陣列
+        if (!Array.isArray(this.projectHistory)) {
+            console.warn('⚠️ projectHistory 不是陣列，重新初始化');
+            this.projectHistory = [];
+        }
+
         // 移除重複項目
         this.projectHistory = this.projectHistory.filter(p => p.path !== project.path);
 

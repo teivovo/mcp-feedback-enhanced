@@ -33,7 +33,7 @@ import time
 from typing import Annotated, Any
 
 from fastmcp import FastMCP
-from fastmcp.utilities.types import Image as MCPImage
+from fastmcp.utilities.types import Image
 from mcp.types import TextContent
 from pydantic import Field
 
@@ -58,15 +58,7 @@ from .utils.logging_middleware import (
     log_mcp_tool
 )
 
-# 導入 MCP-Telegram 橋接器
-from .utils.mcp_telegram_bridge import (
-    get_bridge,
-    initialize_bridge,
-    create_telegram_session,
-    end_telegram_session,
-    get_telegram_feedback,
-    clear_telegram_feedback
-)
+# MCP-Telegram 橋接器已移除，改用直接 API 調用
 
 # 導入規則引擎
 from .utils.rules_engine import MessageTypeRulesEngine
@@ -78,6 +70,9 @@ from .utils.config_manager import (
     is_telegram_enabled,
     get_telegram_config
 )
+
+# 導入直接 Telegram 通知功能
+from .utils.telegram_manager import send_telegram_notification
 
 
 # ===== 編碼初始化 =====
@@ -350,6 +345,11 @@ def create_feedback_text(feedback_data: dict) -> str:
 
             img_info = f"  {i}. {name} ({size_str})"
 
+            # 如果有 URL，優先顯示（LLM 可以直接訪問）
+            if img.get("url"):
+                img_info += f"\n     🔗 URL: {img['url']}"
+                img_info += f"\n     💡 LLM 可以直接訪問此 URL 查看圖片"
+
             # 為提高兼容性，添加 base64 預覽信息
             if img.get("data"):
                 try:
@@ -405,7 +405,7 @@ def create_feedback_text(feedback_data: dict) -> str:
     return "\n\n".join(text_parts) if text_parts else "用戶未提供任何回饋內容。"
 
 
-def process_images(images_data: list[dict]) -> list[MCPImage]:
+def process_images(images_data: list[dict]) -> list[Image]:
     """
     處理圖片資料，轉換為 MCP 圖片對象
 
@@ -452,10 +452,39 @@ def process_images(images_data: list[dict]) -> list[MCPImage]:
                 image_format = "png"  # 默認使用 PNG
 
             # 創建 MCPImage 對象
-            mcp_image = MCPImage(data=image_bytes, format=image_format)
-            mcp_images.append(mcp_image)
+            try:
+                # Log before creating MCPImage
+                import datetime
+                with open(f"image_processing_debug_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.log", 'a', encoding='utf-8') as f:
+                    f.write(f"Creating MCPImage for image {i}\n")
+                    f.write(f"  - file_name: {file_name}\n")
+                    f.write(f"  - image_format: {image_format}\n")
+                    f.write(f"  - image_bytes type: {type(image_bytes)}\n")
+                    f.write(f"  - image_bytes length: {len(image_bytes)}\n")
+                    f.write(f"  - Using correct FastMCP Image class: {Image}\n")
 
-            debug_log(f"圖片 {i} ({file_name}) 處理成功，格式: {image_format}")
+                # Use the correct FastMCP Image class directly (no fallback needed)
+                mcp_image = Image(data=image_bytes, format=image_format)
+
+                # Log after successful creation
+                with open(f"image_processing_debug_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.log", 'a', encoding='utf-8') as f:
+                    f.write(f"FastMCP Image created successfully for image {i}\n")
+                    f.write(f"  - mcp_image type: {type(mcp_image)}\n")
+                    f.write(f"  - mcp_image attributes: {[attr for attr in dir(mcp_image) if not attr.startswith('_')]}\n")
+
+                # Add the Image object directly (no conversion needed)
+                mcp_images.append(mcp_image)
+                debug_log(f"圖片 {i} ({file_name}) 處理成功，格式: {image_format}")
+
+            except Exception as mcp_error:
+                # Log MCPImage creation error
+                with open(f"image_processing_debug_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.log", 'a', encoding='utf-8') as f:
+                    f.write(f"ERROR: MCPImage creation failed for image {i}\n")
+                    f.write(f"  - Error: {mcp_error}\n")
+                    f.write(f"  - Error type: {type(mcp_error)}\n")
+                    import traceback
+                    f.write(f"  - Traceback: {traceback.format_exc()}\n")
+                raise
 
         except Exception as e:
             # 使用統一錯誤處理（不影響 JSON RPC）
@@ -508,8 +537,34 @@ async def interactive_feedback(
     Returns:
         List: 包含 TextContent 和 MCPImage 對象的列表
     """
+    # Enhanced debug logging to file
+    import datetime
+    from pathlib import Path
+    log_file = None
+    try:
+        # Use absolute path based on project directory
+        log_dir = Path(project_directory) / "logs"
+        log_dir.mkdir(exist_ok=True)
+        log_file = log_dir / f"interactive_feedback_debug_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+        with open(log_file, 'w', encoding='utf-8') as f:
+            f.write(f"=== INTERACTIVE_FEEDBACK STARTED ===\n")
+            f.write(f"Time: {datetime.datetime.now()}\n")
+            f.write(f"project_directory: {project_directory}\n")
+            f.write(f"summary length: {len(summary)}\n")
+            f.write(f"timeout: {timeout}\n")
+            f.write(f"message_type: {message_type}\n")
+            f.write(f"Log file: {log_file}\n")
+            f.flush()
+        debug_log(f"Interactive feedback debug log: {log_file}")
+    except Exception as log_error:
+        debug_log(f"Logging error: {log_error}")
+
     # 生成會話 ID
     session_id = f"mcp_session_{int(time.time())}_{id(project_directory)}"
+    if log_file:
+        with open(log_file, 'a', encoding='utf-8') as f:
+            f.write(f"[{datetime.datetime.now()}] Session ID generated: {session_id}\n")
+            f.flush()
 
     # MCP 日誌記錄 - 工具調用開始
     call_id = log_tool_start(
@@ -523,13 +578,25 @@ async def interactive_feedback(
         session_id=session_id,
         project_directory=project_directory
     )
+    if log_file:
+        with open(log_file, 'a', encoding='utf-8') as f:
+            f.write(f"[{datetime.datetime.now()}] log_tool_start completed, call_id: {call_id}\n")
+            f.flush()
 
     # 記錄會話開始
     log_session_start(session_id, project_directory=project_directory)
+    if log_file:
+        with open(log_file, 'a', encoding='utf-8') as f:
+            f.write(f"[{datetime.datetime.now()}] log_session_start completed\n")
+            f.flush()
 
     # 環境偵測
     is_remote = is_remote_environment()
     is_wsl = is_wsl_environment()
+    if log_file:
+        with open(log_file, 'a', encoding='utf-8') as f:
+            f.write(f"[{datetime.datetime.now()}] Environment detection: remote={is_remote}, wsl={is_wsl}\n")
+            f.flush()
 
     debug_log(f"環境偵測結果 - 遠端: {is_remote}, WSL: {is_wsl}")
     debug_log("使用介面: Web UI")
@@ -540,21 +607,16 @@ async def interactive_feedback(
             project_directory = os.getcwd()
         project_directory = os.path.abspath(project_directory)
 
-        # 檢查 Telegram 橋接器是否可用
-        bridge = get_bridge()
-        telegram_session_created = False
-
-        if bridge and bridge.status.value == "connected":
-            # 創建 Telegram 會話
-            # 注意：這裡使用第一個活躍會話的 chat_id，實際應用中需要更好的會話管理
-            if bridge.active_sessions:
-                first_session = list(bridge.active_sessions.values())[0]
-                chat_id = first_session.chat_id
-                telegram_session_created = await create_telegram_session(
-                    session_id, chat_id, project_directory,
-                    user_context={"tool": "interactive_feedback", "summary": summary}
-                )
-                debug_log(f"Telegram 會話創建: {'成功' if telegram_session_created else '失敗'}")
+        # 發送 Telegram 通知（直接 API 調用，無需橋接器）
+        telegram_notification_sent = False
+        try:
+            telegram_notification_sent = await send_telegram_notification(summary, project_directory)
+            if telegram_notification_sent:
+                debug_log("Telegram 通知發送成功")
+            else:
+                debug_log("Telegram 通知發送失敗或已停用")
+        except Exception as e:
+            debug_log(f"Telegram 通知發送異常: {e}")
 
         # 使用 Web 模式
         debug_log("回饋模式: web")
@@ -568,6 +630,11 @@ async def interactive_feedback(
         }
 
         try:
+            if log_file:
+                with open(log_file, 'a', encoding='utf-8') as f:
+                    f.write(f"[{datetime.datetime.now()}] Applying rules engine...\n")
+                    f.flush()
+
             rules_engine = get_rules_engine()
             applied_config = rules_engine.apply_rules(message_type, project_directory, base_config)
             debug_log(f"🎯 規則引擎應用完成，配置: {applied_config}")
@@ -576,13 +643,34 @@ async def interactive_feedback(
             final_timeout = applied_config.get("timeout", timeout)
             final_summary = applied_config.get("response_text", summary)
 
+            if log_file:
+                with open(log_file, 'a', encoding='utf-8') as f:
+                    f.write(f"[{datetime.datetime.now()}] Rules applied: timeout={final_timeout}\n")
+                    f.flush()
+
         except Exception as e:
             debug_log(f"⚠️ 規則引擎應用失敗: {e}")
             # 使用原始配置
             final_timeout = timeout
             final_summary = summary
 
+            if log_file:
+                with open(log_file, 'a', encoding='utf-8') as f:
+                    f.write(f"[{datetime.datetime.now()}] Rules engine failed: {e}\n")
+                    f.flush()
+
+        if log_file:
+            with open(log_file, 'a', encoding='utf-8') as f:
+                f.write(f"[{datetime.datetime.now()}] Calling launch_web_feedback_ui...\n")
+                f.flush()
+
         result = await launch_web_feedback_ui(project_directory, final_summary, final_timeout, message_type)
+
+        if log_file:
+            with open(log_file, 'a', encoding='utf-8') as f:
+                f.write(f"[{datetime.datetime.now()}] launch_web_feedback_ui returned: {result is not None}\n")
+                f.flush()
+
 
         # 處理取消情況
         if not result:
@@ -611,6 +699,25 @@ async def interactive_feedback(
             feedback_items.extend(mcp_images)
             debug_log(f"已添加 {len(mcp_images)} 張圖片")
 
+            # Debug: Log the types of objects being returned
+            import datetime
+            with open(f"feedback_items_debug_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.log", 'w', encoding='utf-8') as f:
+                f.write(f"=== FEEDBACK ITEMS DEBUG ===\n")
+                f.write(f"Total feedback items: {len(feedback_items)}\n")
+                for i, item in enumerate(feedback_items):
+                    f.write(f"Item {i+1}:\n")
+                    f.write(f"  - Type: {type(item)}\n")
+                    f.write(f"  - Module: {type(item).__module__}\n")
+                    f.write(f"  - Attributes: {[attr for attr in dir(item) if not attr.startswith('_')]}\n")
+                    if hasattr(item, 'type'):
+                        f.write(f"  - item.type: {item.type}\n")
+                    if hasattr(item, 'data'):
+                        f.write(f"  - Has data: {hasattr(item, 'data')}\n")
+                        if hasattr(item, 'data') and item.data:
+                            f.write(f"  - Data type: {type(item.data)}\n")
+                            f.write(f"  - Data length: {len(item.data) if hasattr(item.data, '__len__') else 'N/A'}\n")
+                    f.write(f"\n")
+
         # 確保至少有一個回饋項目
         if not feedback_items:
             feedback_items.append(
@@ -619,10 +726,9 @@ async def interactive_feedback(
 
         debug_log(f"回饋收集完成，共 {len(feedback_items)} 個項目")
 
-        # 結束 Telegram 會話
-        if telegram_session_created:
-            await end_telegram_session(session_id)
-            debug_log("Telegram 會話已結束")
+        # Telegram 通知已發送（無需會話管理）
+        if telegram_notification_sent:
+            debug_log("Telegram 通知流程完成")
 
         # 記錄會話結束
         log_session_end(session_id)
@@ -633,7 +739,7 @@ async def interactive_feedback(
             "has_text": any(item.type == "text" for item in feedback_items),
             "has_images": any(hasattr(item, 'data') for item in feedback_items),
             "result_summary": "回饋收集成功",
-            "telegram_session": telegram_session_created
+            "telegram_notification": telegram_notification_sent
         })
 
         return feedback_items
@@ -650,13 +756,9 @@ async def interactive_feedback(
         user_error_msg = ErrorHandler.format_user_error(e, include_technical=False)
         debug_log(f"回饋收集錯誤 [錯誤ID: {error_id}]: {e!s}")
 
-        # 結束 Telegram 會話（如果已創建）
-        if 'telegram_session_created' in locals() and telegram_session_created:
-            try:
-                await end_telegram_session(session_id)
-                debug_log("Telegram 會話已結束（錯誤情況）")
-            except Exception as cleanup_error:
-                debug_log(f"Telegram 會話清理失敗: {cleanup_error}")
+        # Telegram 通知無需特殊清理（直接 API 調用）
+        if 'telegram_notification_sent' in locals() and telegram_notification_sent:
+            debug_log("Telegram 通知已發送（錯誤情況下無需清理）")
 
         # 記錄會話結束
         log_session_end(session_id)
@@ -859,6 +961,84 @@ def get_system_info() -> str:
         raise
 
 
+@mcp.tool()
+def reload_server() -> str:
+    """
+    重新載入 MCP 伺服器後端而不重啟 VS Code 連接
+
+    此開發工具觸發伺服器實現的熱重載，允許快速測試程式碼變更而無需重新連接 VS Code。
+
+    僅在開發模式下工作（--dev-mode 標誌）。在生產模式下，此工具返回錯誤訊息。
+
+    Returns:
+        str: 指示重載成功或失敗的狀態訊息
+    """
+    import tempfile
+    import time
+
+    # MCP 日誌記錄 - 工具調用開始
+    call_id = log_tool_start("reload_server")
+
+    try:
+        # 檢查是否在開發模式下運行
+        dev_mode = os.environ.get("MCP_DEV_MODE", "").lower() == "true"
+
+        if not dev_mode:
+            result = "錯誤: reload_server() 僅在開發模式下工作。請使用 --dev-mode 標誌啟動伺服器。"
+
+            # MCP 日誌記錄 - 工具調用完成（非開發模式）
+            log_tool_end(call_id, response_data={
+                "status": "error",
+                "reason": "not_in_dev_mode"
+            })
+
+            return result
+
+        # 向包裝器發送重載信號
+        # 包裝器監視此特殊標記文件
+        reload_marker = os.path.join(tempfile.gettempdir(), "mcp_reload_request")
+
+        try:
+            with open(reload_marker, "w") as f:
+                f.write(str(time.time()))
+
+            debug_log("重載請求已發送到包裝器")
+            result = "重載已啟動。後端將在 1-2 秒內重新啟動..."
+
+            # MCP 日誌記錄 - 工具調用成功完成
+            log_tool_end(call_id, response_data={
+                "status": "success",
+                "reload_marker": reload_marker
+            })
+
+            return result
+
+        except Exception as e:
+            error_id = ErrorHandler.log_error_with_context(
+                e,
+                context={"operation": "reload_request"},
+                error_type=ErrorType.FILE_IO,
+            )
+            result = f"重載失敗 [錯誤 ID: {error_id}]: {e}"
+
+            # MCP 日誌記錄 - 工具調用錯誤
+            log_tool_error(call_id, str(e), error_details={
+                "error_type": type(e).__name__,
+                "error_id": error_id,
+                "operation": "創建重載標記文件"
+            })
+
+            return result
+
+    except Exception as e:
+        # MCP 日誌記錄 - 工具調用錯誤
+        log_tool_error(call_id, str(e), error_details={
+            "error_type": type(e).__name__,
+            "operation": "重載伺服器"
+        })
+        raise
+
+
 # ===== 主程式入口 =====
 def main():
     """主要入口點，用於套件執行"""
@@ -873,6 +1053,31 @@ def main():
         "on",
     )
 
+    # 初始化配置管理器 (ALWAYS, not just in debug mode) - FIX: Moved outside debug block
+    # Use absolute path to config file relative to module location
+    from pathlib import Path
+    
+    # Config file in project root (3 parent levels up from this file)
+    config_file_path = Path(__file__).parent.parent.parent / "mcp_config.json"
+    
+    config_manager = initialize_config_manager(
+        config_file=str(config_file_path),
+        enable_encryption=True,
+        auto_save=True
+    )
+
+    # 初始化 MCP 日誌中間件 (ALWAYS) - FIX: Moved outside debug block
+    from .utils.logging_middleware import initialize_middleware
+    logging_config = config_manager.get_logging_config()
+    middleware_config = {
+        'log_level': 'debug' if debug_enabled else logging_config.level,
+        'enable_telegram_forwarding': logging_config.enable_telegram_forwarding,
+        'max_log_entries': logging_config.max_log_entries,
+        'include_request_data': logging_config.include_request_data,
+        'include_response_data': logging_config.include_response_data
+    }
+    middleware = initialize_middleware(middleware_config)
+
     if debug_enabled:
         debug_log("🚀 啟動互動式回饋收集 MCP 服務器")
         debug_log(f"   服務器名稱: {SERVER_NAME}")
@@ -883,71 +1088,16 @@ def main():
         debug_log(f"   WSL 環境: {is_wsl_environment()}")
         debug_log(f"   桌面模式: {'啟用' if desktop_mode else '禁用'}")
         debug_log("   介面類型: Web UI")
+        debug_log("   配置管理器: 已初始化")
+        debug_log("   MCP 日誌中間件: 已初始化")
         debug_log("   等待來自 AI 助手的調用...")
 
-        # 初始化配置管理器
-        config_manager = initialize_config_manager(
-            config_file="mcp_config.json",
-            enable_encryption=True,
-            auto_save=True
-        )
-        debug_log("   配置管理器: 已初始化")
-
-        # 初始化 MCP 日誌中間件
-        from .utils.logging_middleware import initialize_middleware
-        logging_config = config_manager.get_logging_config()
-        middleware_config = {
-            'log_level': 'debug' if debug_enabled else logging_config.level,
-            'enable_telegram_forwarding': logging_config.enable_telegram_forwarding,
-            'max_log_entries': logging_config.max_log_entries,
-            'include_request_data': logging_config.include_request_data,
-            'include_response_data': logging_config.include_response_data
-        }
-        middleware = initialize_middleware(middleware_config)
-        debug_log("   MCP 日誌中間件: 已初始化")
-
-        # 初始化 Telegram 橋接器（如果配置可用）
-        try:
-            if is_telegram_enabled():
-                telegram_config = get_telegram_config()
-
-                from .utils.telegram_manager import TelegramBotManager
-
-                telegram_manager = TelegramBotManager(
-                    telegram_config.bot_token,
-                    telegram_config.chat_id
-                )
-
-                bridge_config = {
-                    'session_timeout_minutes': telegram_config.session_timeout_minutes,
-                    'max_concurrent_sessions': telegram_config.max_concurrent_sessions,
-                    'enable_auto_forwarding': telegram_config.enable_auto_forwarding,
-                    'message_format': {
-                        'include_session_id': telegram_config.include_session_id,
-                        'include_timestamp': telegram_config.include_timestamp,
-                        'include_project_path': telegram_config.include_project_path,
-                        'include_details': telegram_config.include_details
-                    },
-                    'chunker': {
-                        'max_chunk_size': telegram_config.max_chunk_size,
-                        'preserve_code_blocks': telegram_config.preserve_code_blocks,
-                        'preserve_markdown': telegram_config.preserve_markdown,
-                        'add_navigation': telegram_config.add_navigation,
-                        'add_previews': telegram_config.add_previews
-                    }
-                }
-
-                bridge = initialize_bridge(telegram_manager, middleware, bridge_config)
-                debug_log("   Telegram 橋接器: 已初始化")
-
-                # 啟動橋接器（在背景執行）
-                asyncio.create_task(bridge.start())
-                debug_log("   Telegram 橋接器: 已啟動")
-            else:
-                debug_log("   Telegram 橋接器: 未配置或已停用")
-
-        except Exception as e:
-            debug_log(f"   Telegram 橋接器初始化失敗: {e}")
+        # Telegram 橋接器已移除，改用直接 API 調用
+        # 無需複雜的初始化，直接在需要時調用 send_telegram_notification()
+        if is_telegram_enabled():
+            debug_log("   Telegram 直接通知: 已配置")
+        else:
+            debug_log("   Telegram 直接通知: 未配置或已停用")
 
         debug_log("準備啟動 MCP 伺服器...")
         debug_log("調用 mcp.run()...")

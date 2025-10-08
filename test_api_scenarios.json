@@ -1,0 +1,393 @@
+{
+  "test_scenarios": {
+    "valid_rules": [
+      {
+        "id": "test_auto_submit_rule",
+        "name": "Test Auto Submit Rule",
+        "description": "Test rule for automatic submission",
+        "message_type": "error_report",
+        "rule_type": "auto_submit_override",
+        "value": true,
+        "timeout_override": 300,
+        "project_filter": {
+          "type": "all"
+        },
+        "priority": 100,
+        "enabled": true,
+        "created_at": "2025-01-05T10:00:00Z"
+      },
+      {
+        "id": "test_header_rule",
+        "name": "Test Header Rule",
+        "description": "Test rule for response headers",
+        "message_type": "code_review",
+        "rule_type": "response_header",
+        "value": "## Code Review\n\nThank you for the review.\n\n",
+        "project_filter": {
+          "type": "specific",
+          "patterns": ["/web/*", "/frontend/*"]
+        },
+        "priority": 50,
+        "enabled": true,
+        "created_at": "2025-01-05T10:00:00Z"
+      },
+      {
+        "id": "test_timeout_rule",
+        "name": "Test Timeout Rule",
+        "description": "Test rule for timeout override",
+        "message_type": "general",
+        "rule_type": "timeout_override",
+        "value": 600,
+        "project_filter": {
+          "type": "exclude",
+          "patterns": ["/temp/*", "/cache/*"]
+        },
+        "priority": 25,
+        "enabled": false,
+        "created_at": "2025-01-05T10:00:00Z"
+      },
+      {
+        "id": "test_regex_rule",
+        "name": "Test Regex Rule",
+        "description": "Test rule with regex pattern matching",
+        "message_type": "bug_report",
+        "rule_type": "custom_config",
+        "value": {
+          "auto_submit": true,
+          "notification": true,
+          "priority": "high"
+        },
+        "project_filter": {
+          "type": "regex",
+          "patterns": [".*\\.test\\..*", ".*spec.*"]
+        },
+        "priority": 75,
+        "enabled": true,
+        "created_at": "2025-01-05T10:00:00Z"
+      }
+    ],
+    "invalid_rules": [
+      {
+        "name": "Missing Required Fields",
+        "description": "Rule missing required fields"
+      },
+      {
+        "id": "invalid_rule_type",
+        "name": "Invalid Rule Type",
+        "description": "Rule with invalid rule type",
+        "message_type": "test",
+        "rule_type": "invalid_type",
+        "value": true,
+        "priority": 50,
+        "enabled": true
+      },
+      {
+        "id": "invalid_priority",
+        "name": "Invalid Priority",
+        "description": "Rule with invalid priority value",
+        "message_type": "test",
+        "rule_type": "auto_submit_override",
+        "value": true,
+        "priority": -10,
+        "enabled": true
+      },
+      {
+        "id": "invalid_project_filter",
+        "name": "Invalid Project Filter",
+        "description": "Rule with invalid project filter",
+        "message_type": "test",
+        "rule_type": "auto_submit_override",
+        "value": true,
+        "project_filter": {
+          "type": "invalid_type"
+        },
+        "priority": 50,
+        "enabled": true
+      }
+    ],
+    "test_requests": [
+      {
+        "name": "Error Report Test",
+        "message_type": "error_report",
+        "project_path": "/test/project",
+        "expected_matches": 1
+      },
+      {
+        "name": "Code Review Test",
+        "message_type": "code_review",
+        "project_path": "/web/frontend",
+        "expected_matches": 1
+      },
+      {
+        "name": "General Message Test",
+        "message_type": "general",
+        "project_path": "/backend/api",
+        "expected_matches": 0
+      },
+      {
+        "name": "Bug Report Test",
+        "message_type": "bug_report",
+        "project_path": "/test/unit.test.js",
+        "expected_matches": 1
+      },
+      {
+        "name": "No Match Test",
+        "message_type": "unknown_type",
+        "project_path": "/unknown/path",
+        "expected_matches": 0
+      }
+    ],
+    "performance_tests": [
+      {
+        "name": "Single Request Performance",
+        "endpoint": "/api/rules",
+        "method": "GET",
+        "iterations": 1,
+        "max_response_time_ms": 100
+      },
+      {
+        "name": "Bulk Request Performance",
+        "endpoint": "/api/rules",
+        "method": "GET",
+        "iterations": 100,
+        "max_avg_response_time_ms": 50
+      },
+      {
+        "name": "Rule Test Performance",
+        "endpoint": "/api/rules/test",
+        "method": "POST",
+        "data": {
+          "message_type": "error_report",
+          "project_path": "/test/project"
+        },
+        "iterations": 50,
+        "max_response_time_ms": 100
+      },
+      {
+        "name": "Rule Creation Performance",
+        "endpoint": "/api/rules",
+        "method": "POST",
+        "data": {
+          "name": "Performance Test Rule",
+          "message_type": "performance_test",
+          "rule_type": "auto_submit_override",
+          "value": true,
+          "priority": 50,
+          "enabled": true
+        },
+        "iterations": 20,
+        "max_response_time_ms": 200
+      }
+    ],
+    "error_scenarios": [
+      {
+        "name": "Invalid JSON",
+        "endpoint": "/api/rules",
+        "method": "POST",
+        "data": "invalid json",
+        "expected_status": 400
+      },
+      {
+        "name": "Missing Content-Type",
+        "endpoint": "/api/rules",
+        "method": "POST",
+        "headers": {},
+        "data": {"name": "test"},
+        "expected_status": 400
+      },
+      {
+        "name": "Rule Not Found",
+        "endpoint": "/api/rules/non_existent_rule",
+        "method": "GET",
+        "expected_status": 404
+      },
+      {
+        "name": "Invalid Rule ID Format",
+        "endpoint": "/api/rules/invalid@id#format",
+        "method": "GET",
+        "expected_status": 400
+      },
+      {
+        "name": "Large Payload",
+        "endpoint": "/api/rules",
+        "method": "POST",
+        "data": {
+          "name": "Large Rule",
+          "description": "This is a very long description that simulates a large payload for testing purposes. It contains many repeated characters and text to test the API's ability to handle large data payloads without performance degradation or errors.",
+          "message_type": "test",
+          "rule_type": "auto_submit_override",
+          "value": true,
+          "priority": 50,
+          "enabled": true
+        },
+        "expected_status": 200
+      }
+    ],
+    "concurrent_tests": [
+      {
+        "name": "Concurrent GET Requests",
+        "endpoint": "/api/rules",
+        "method": "GET",
+        "concurrent_requests": 10,
+        "expected_success_rate": 100
+      },
+      {
+        "name": "Concurrent Rule Tests",
+        "endpoint": "/api/rules/test",
+        "method": "POST",
+        "data": {
+          "message_type": "error_report",
+          "project_path": "/test/project"
+        },
+        "concurrent_requests": 5,
+        "expected_success_rate": 100
+      },
+      {
+        "name": "Mixed Concurrent Operations",
+        "operations": [
+          {
+            "endpoint": "/api/rules",
+            "method": "GET",
+            "weight": 60
+          },
+          {
+            "endpoint": "/api/rules/test",
+            "method": "POST",
+            "data": {
+              "message_type": "test",
+              "project_path": "/test"
+            },
+            "weight": 30
+          },
+          {
+            "endpoint": "/api/rules",
+            "method": "POST",
+            "data": {
+              "name": "Concurrent Test Rule",
+              "message_type": "concurrent_test",
+              "rule_type": "auto_submit_override",
+              "value": true,
+              "priority": 50,
+              "enabled": true
+            },
+            "weight": 10
+          }
+        ],
+        "total_requests": 20,
+        "expected_success_rate": 95
+      }
+    ],
+    "security_tests": [
+      {
+        "name": "SQL Injection Attempt",
+        "endpoint": "/api/rules/'; DROP TABLE rules; --",
+        "method": "GET",
+        "expected_status": 404
+      },
+      {
+        "name": "XSS Attempt in Rule Name",
+        "endpoint": "/api/rules",
+        "method": "POST",
+        "data": {
+          "name": "<script>alert('xss')</script>",
+          "message_type": "test",
+          "rule_type": "auto_submit_override",
+          "value": true,
+          "priority": 50,
+          "enabled": true
+        },
+        "expected_status": 200,
+        "validate_response": "name_escaped"
+      },
+      {
+        "name": "Path Traversal Attempt",
+        "endpoint": "/api/rules/../../../etc/passwd",
+        "method": "GET",
+        "expected_status": 404
+      },
+      {
+        "name": "Oversized Request",
+        "endpoint": "/api/rules",
+        "method": "POST",
+        "data": {
+          "name": "This is an extremely long rule name that is designed to test the API's ability to handle oversized requests and validate proper error handling for payloads that exceed reasonable size limits. This name is intentionally very long to trigger size validation.",
+          "message_type": "test",
+          "rule_type": "auto_submit_override",
+          "value": true,
+          "priority": 50,
+          "enabled": true
+        },
+        "expected_status": 413
+      }
+    ],
+    "edge_cases": [
+      {
+        "name": "Empty Rule Name",
+        "endpoint": "/api/rules",
+        "method": "POST",
+        "data": {
+          "name": "",
+          "message_type": "test",
+          "rule_type": "auto_submit_override",
+          "value": true,
+          "priority": 50,
+          "enabled": true
+        },
+        "expected_status": 400
+      },
+      {
+        "name": "Unicode Characters in Rule",
+        "endpoint": "/api/rules",
+        "method": "POST",
+        "data": {
+          "name": "测试规则 🧪",
+          "description": "Unicode test rule with emoji 🚀",
+          "message_type": "unicode_test",
+          "rule_type": "auto_submit_override",
+          "value": true,
+          "priority": 50,
+          "enabled": true
+        },
+        "expected_status": 200
+      },
+      {
+        "name": "Null Values in Request",
+        "endpoint": "/api/rules",
+        "method": "POST",
+        "data": {
+          "name": null,
+          "message_type": "test",
+          "rule_type": null,
+          "value": true,
+          "priority": 50,
+          "enabled": true
+        },
+        "expected_status": 400
+      },
+      {
+        "name": "Extremely Long Project Path",
+        "endpoint": "/api/rules/test",
+        "method": "POST",
+        "data": {
+          "message_type": "test",
+          "project_path": "/very_long_path_segment/very_long_path_segment/very_long_path_segment/very_long_path_segment/very_long_path_segment/very_long_path_segment/very_long_path_segment/very_long_path_segment/very_long_path_segment/very_long_path_segment/test_file.js"
+        },
+        "expected_status": 200
+      }
+    ]
+  },
+  "test_configuration": {
+    "base_url": "http://localhost:8000",
+    "timeout_seconds": 30,
+    "retry_attempts": 3,
+    "performance_thresholds": {
+      "response_time_ms": 100,
+      "concurrent_success_rate": 95,
+      "memory_usage_mb": 50
+    },
+    "test_data_cleanup": true,
+    "generate_reports": true,
+    "report_formats": ["json", "html"],
+    "log_level": "INFO"
+  }
+}

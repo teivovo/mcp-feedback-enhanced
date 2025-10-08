@@ -28,7 +28,7 @@
   "logging": {
     "enabled": true,
     "level": "info",
-    "enable_telegram_forwarding": false,
+    "enable_telegram_forwarding": true,
     "max_log_entries": 1000,
     "include_request_data": true,
     "include_response_data": true,

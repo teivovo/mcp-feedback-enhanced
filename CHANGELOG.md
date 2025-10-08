@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Image Upload Feature** - Complete image upload support for both MCP tool and Web GUI
+  - Images saved to disk with UUID filenames
+  - Accessible URLs generated for LLM access
+  - Support for PNG, JPEG, GIF, WebP, BMP formats
+  - 10MB size limit per image
+  - Automatic cleanup function for old files
+  - Comprehensive error handling for invalid images
 - **Auto-Submit UI Enhancement Project** - Complete message-type rules system with intelligent auto-submit behavior
 - **Message-Type Rules Engine** - Backend rules engine with persistent storage and priority-based conflict resolution
 - **Rules Management UI** - Comprehensive web interface for managing message-type rules with project grouping

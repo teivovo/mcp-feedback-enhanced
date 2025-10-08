@@ -29,21 +29,7 @@ from .logging_middleware import (
     log_mcp_tool,
 )
 
-from .mcp_telegram_bridge import (
-    MCPTelegramBridge,
-    BridgeStatus,
-    MessageType,
-    BridgeMessage,
-    TelegramSession,
-    get_bridge,
-    initialize_bridge,
-    start_bridge,
-    stop_bridge,
-    create_telegram_session,
-    end_telegram_session,
-    get_telegram_feedback,
-    clear_telegram_feedback,
-)
+# MCP Telegram Bridge removed - using direct API calls instead
 
 from .message_chunker import (
     MessageChunker,
@@ -91,19 +77,7 @@ __all__ = [
     "log_session_start",
     "log_session_end",
     "log_mcp_tool",
-    "MCPTelegramBridge",
-    "BridgeStatus",
-    "MessageType",
-    "BridgeMessage",
-    "TelegramSession",
-    "get_bridge",
-    "initialize_bridge",
-    "start_bridge",
-    "stop_bridge",
-    "create_telegram_session",
-    "end_telegram_session",
-    "get_telegram_feedback",
-    "clear_telegram_feedback",
+    # Bridge exports removed - using direct API calls
     "MessageChunker",
     "MessageChunk",
     "ChunkType",

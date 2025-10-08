@@ -23,18 +23,23 @@ debug_log("這是一條調試信息")
 import os
 import sys
 from typing import Any
+from datetime import datetime
+from pathlib import Path
 
 
 def debug_log(message: Any, prefix: str = "DEBUG") -> None:
     """
-    輸出調試訊息到標準錯誤，避免污染標準輸出
+    輸出調試訊息到標準錯誤和日誌文件，避免污染標準輸出
 
     Args:
         message: 要輸出的調試信息
         prefix: 調試信息的前綴標識，默認為 "DEBUG"
     """
     # 只在啟用調試模式時才輸出，避免干擾 MCP 通信
-    if os.getenv("MCP_DEBUG", "").lower() not in ("true", "1", "yes", "on"):
+    # TEMPORARILY FORCE DEBUG MODE FOR TROUBLESHOOTING
+    debug_mode = True  # Force debug mode
+    # debug_mode = os.getenv("MCP_DEBUG", "").lower() in ("true", "1", "yes", "on")
+    if not debug_mode:
         return
 
     try:
@@ -42,15 +47,50 @@ def debug_log(message: Any, prefix: str = "DEBUG") -> None:
         if not isinstance(message, str):
             message = str(message)
 
+        # 創建帶時間戳的日誌消息
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+        log_message = f"[{timestamp}] [{prefix}] {message}"
+
         # 安全地輸出到 stderr，處理編碼問題
         try:
-            print(f"[{prefix}] {message}", file=sys.stderr, flush=True)
+            print(log_message, file=sys.stderr, flush=True)
         except UnicodeEncodeError:
             # 如果遇到編碼問題，使用 ASCII 安全模式
             safe_message = message.encode("ascii", errors="replace").decode("ascii")
-            print(f"[{prefix}] {safe_message}", file=sys.stderr, flush=True)
+            safe_log_message = f"[{timestamp}] [{prefix}] {safe_message}"
+            print(safe_log_message, file=sys.stderr, flush=True)
+
+        # 同時寫入日誌文件
+        _write_to_log_file(log_message)
+
     except Exception:
         # 最後的備用方案：靜默失敗，不影響主程序
+        pass
+
+
+def _write_to_log_file(message: str) -> None:
+    """
+    將日誌消息寫入文件
+
+    Args:
+        message: 要寫入的日誌消息
+    """
+    try:
+        # 創建日誌目錄
+        log_dir = Path("logs")
+        log_dir.mkdir(exist_ok=True)
+
+        # 創建日誌文件名（按日期）
+        today = datetime.now().strftime("%Y-%m-%d")
+        log_file = log_dir / f"mcp_debug_{today}.log"
+
+        # 寫入日誌文件
+        with open(log_file, "a", encoding="utf-8") as f:
+            f.write(message + "\n")
+            f.flush()
+
+    except Exception:
+        # 如果文件寫入失敗，靜默忽略
         pass
 
 

@@ -84,7 +84,7 @@ class MessageTypeRulesEngine:
             
         except Exception as e:
             error_id = ErrorHandler.log_error_with_context(
-                e, ErrorType.BUSINESS_LOGIC,
+                e, error_type=ErrorType.SYSTEM,
                 context={
                     "message_type": message_type,
                     "project_directory": project_directory,

@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "mcp-feedback-enhanced": {
+      "command": "python",
+      "args": ["-m", "mcp_feedback_enhanced"],
+      "timeout": 600,
+      "env": {
+        "MCP_DEBUG": "false",
+        "MCP_WEB_PORT": "8770",
+        "MCP_LANGUAGE": "en",
+        "PYTHONPATH": "C:/Users/KelvinLAW/Documents/augment-projects/mcp-feedback-dev/src"
+      },
+      "autoApprove": ["interactive_feedback"]
+    }
+  }
+}

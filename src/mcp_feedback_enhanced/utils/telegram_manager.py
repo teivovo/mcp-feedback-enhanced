@@ -587,9 +587,9 @@ class TelegramBotManager:
         debug_log("Stopped Telegram polling")
     
     def format_mcp_message(
-        self, 
-        tool_name: str, 
-        summary: str, 
+        self,
+        tool_name: str,
+        summary: str,
         session_id: str = "",
         project_directory: str = "",
         include_session_id: bool = True,
@@ -598,7 +598,7 @@ class TelegramBotManager:
     ) -> str:
         """
         Format an MCP tool call for Telegram.
-        
+
         Args:
             tool_name: Name of the MCP tool
             summary: Tool summary/description
@@ -607,14 +607,19 @@ class TelegramBotManager:
             include_session_id: Whether to include session ID
             include_timestamp: Whether to include timestamp
             include_project_path: Whether to include project path
-            
+
         Returns:
             Formatted message string
         """
         lines = []
-        
-        # Header
-        lines.append("🤖 **MCP Tool Call**")
+
+        # Header with project context
+        project_name = "Unknown"
+        if project_directory:
+            import os
+            project_name = os.path.basename(project_directory.rstrip(os.sep))
+
+        lines.append(f"🔧 **[{project_name}] MCP Feedback**")
         lines.append("")
         
         # Tool information
@@ -643,8 +648,9 @@ class TelegramBotManager:
         
         lines.append("")
         lines.append("---")
-        lines.append("💬 Please provide your feedback...")
-        
+        lines.append("💬 **Please reply to this message with your feedback**")
+        lines.append("⏰ Session expires in 24 hours")
+
         return "\n".join(lines)
     
     @staticmethod
@@ -728,13 +734,183 @@ async def send_telegram_message(
 async def test_telegram_connection(bot_token: str, chat_id: str) -> Tuple[bool, str]:
     """
     Convenience function to test Telegram connection.
-    
+
     Args:
         bot_token: Telegram bot token
         chat_id: Target chat ID
-        
+
     Returns:
         Tuple of (success, message)
     """
     async with TelegramBotManager(bot_token, chat_id) as bot:
         return await bot.test_connection()
+
+
+def format_feedback_notification(summary: str, project_directory: str, session_id: str = "", web_ui_url: str = "") -> str:
+    """
+    Format a feedback notification message for Telegram with HTML formatting.
+    
+    Matches GUI content while being mobile-friendly and multi-project aware.
+    Uses HTML parse mode for rich formatting.
+
+    Args:
+        summary: The feedback request summary (AI work completed)
+        project_directory: Project directory path for context
+        session_id: MCP session ID for troubleshooting
+        web_ui_url: URL to open feedback interface
+
+    Returns:
+        HTML-formatted message string for Telegram
+    """
+    import html
+    import os
+    from datetime import datetime
+    from pathlib import Path
+
+    # Extract project name
+    project_name = Path(project_directory).name if project_directory else "Unknown"
+    
+    # Escape HTML special characters
+    safe_summary = html.escape(summary)
+    safe_project = html.escape(project_name)
+    
+    # Build message with HTML formatting - simplified header and no footer
+    # Note: Avoid <blockquote> as it renders as orange code block in Telegram
+    message = f"""<b>{safe_project}</b>
+
+{safe_summary}"""
+
+    return message
+
+
+async def send_telegram_notification(summary: str, project_directory: str) -> bool:
+    """Send Telegram notification with diagnostic logging."""
+    import sys
+    import time
+    from pathlib import Path
+    from datetime import datetime
+    
+    # Direct file logging for diagnostics
+    def diag_log(msg):
+        try:
+            log_file = Path(__file__).parent.parent.parent.parent / "telegram_diagnostic.log"
+            with open(log_file, "a", encoding="utf-8") as f:
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+                f.write(f"[{timestamp}] {msg}\n")
+                f.flush()
+            print(f"🔍 {msg}", file=sys.stderr, flush=True)
+        except:
+            pass
+    
+    diag_log("=" * 80)
+    diag_log("send_telegram_notification() CALLED")
+    diag_log(f"summary length: {len(summary)}")
+    diag_log(f"project_directory: {project_directory}")
+    
+    try:
+        from ..utils.config_manager import is_telegram_enabled, get_telegram_config
+
+        diag_log("Checking is_telegram_enabled()...")
+        enabled = is_telegram_enabled()
+        diag_log(f"is_telegram_enabled() = {enabled}")
+        
+        if not enabled:
+            diag_log("EXIT: Telegram disabled")
+            return False
+
+        diag_log("Getting telegram config...")
+        config = get_telegram_config()
+        diag_log(f"config exists: {config is not None}")
+        
+        if not config:
+            diag_log("EXIT: No config")
+            return False
+
+        diag_log(f"bot_token exists: {bool(config.bot_token)}")
+        diag_log(f"chat_id: {config.chat_id}")
+        
+        if not config.chat_id or not config.bot_token:
+            diag_log("EXIT: Incomplete config")
+            return False
+
+        session_id = f"mcp_session_{int(time.time())}"
+        diag_log(f"session_id: {session_id}")
+        
+        web_ui_url = "http://127.0.0.1:8765"
+        try:
+            from ..web import get_web_ui_manager
+            web_manager = get_web_ui_manager()
+            if web_manager and web_manager.port:
+                web_ui_url = f"http://{web_manager.host}:{web_manager.port}"
+                diag_log(f"web_ui_url: {web_ui_url}")
+        except Exception as e:
+            diag_log(f"web manager error: {e}")
+
+        diag_log("Formatting message...")
+        message = format_feedback_notification(
+            summary=summary,
+            project_directory=project_directory,
+            session_id=session_id,
+            web_ui_url=web_ui_url
+        )
+        diag_log(f"message length: {len(message)}")
+        diag_log(f"message preview: {message[:100]}")
+
+        diag_log("Creating TelegramBotManager...")
+        async with TelegramBotManager(config.bot_token, config.chat_id) as bot:
+            diag_log("Calling bot.send_message(parse_mode=HTML)...")
+            result = await bot.send_message(message, parse_mode="HTML")
+            diag_log(f"send_message result: {result}")
+
+            if result:
+                diag_log(f"SUCCESS! message_id={result.get('message_id')}")
+                return True
+            else:
+                diag_log("FAILED: no result")
+                return False
+
+    except Exception as e:
+        diag_log(f"EXCEPTION: {type(e).__name__}: {e}")
+        import traceback
+        diag_log(f"Traceback:\n{traceback.format_exc()}")
+        return False
+
+
+async def send_session_end_notification(project_directory: str, reason: str) -> bool:
+    """
+    Send notification when session ends/times out.
+    
+    Args:
+        project_directory: Project directory path
+        reason: Reason for session end (timeout, expired, etc.)
+    
+    Returns:
+        True if sent successfully
+    """
+    try:
+        from ..utils.config_manager import is_telegram_enabled, get_telegram_config
+
+        if not is_telegram_enabled():
+            return False
+
+        config = get_telegram_config()
+        if not config or not config.chat_id or not config.bot_token:
+            return False
+
+        import html
+        from pathlib import Path
+        
+        project_name = Path(project_directory).name if project_directory else "Unknown"
+        safe_project = html.escape(project_name)
+        
+        # Simple message about session end
+        message = f"""<b>{safe_project}</b>
+
+⏱️ Session ended: {reason}"""
+
+        async with TelegramBotManager(config.bot_token, config.chat_id) as bot:
+            result = await bot.send_message(message, parse_mode="HTML")
+            return result is not None
+
+    except Exception:
+        return False

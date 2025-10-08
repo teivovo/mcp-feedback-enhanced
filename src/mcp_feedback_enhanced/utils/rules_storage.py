@@ -183,7 +183,7 @@ class RulesStorage:
                 
             except Exception as e:
                 error_id = ErrorHandler.log_error_with_context(
-                    e, ErrorType.FILE_OPERATION,
+                    e, error_type=ErrorType.FILE_IO,
                     context={"operation": "load_rules", "file": str(self.rules_file)}
                 )
                 raise RulesStorageError(f"Failed to load rules [Error ID: {error_id}]: {e}")
@@ -217,7 +217,7 @@ class RulesStorage:
                 
             except Exception as e:
                 error_id = ErrorHandler.log_error_with_context(
-                    e, ErrorType.FILE_OPERATION,
+                    e, error_type=ErrorType.FILE_IO,
                     context={"operation": "save_rules", "file": str(self.rules_file)}
                 )
                 raise RulesStorageError(f"Failed to save rules [Error ID: {error_id}]: {e}")

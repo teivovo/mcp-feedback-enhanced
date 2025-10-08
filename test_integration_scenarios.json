@@ -1,0 +1,349 @@
+{
+  "integration_scenarios": {
+    "rule_creation_workflows": [
+      {
+        "name": "Complete Rule Creation Workflow",
+        "description": "Test complete workflow from UI rule creation to backend storage and retrieval",
+        "steps": [
+          {
+            "step": "create_rule_via_api",
+            "action": "POST /api/rules",
+            "data": {
+              "name": "Integration Test Rule",
+              "message_type": "integration_test",
+              "rule_type": "auto_submit_override",
+              "value": true,
+              "priority": 100,
+              "enabled": true
+            },
+            "expected_status": 200
+          },
+          {
+            "step": "verify_rule_storage",
+            "action": "GET /api/rules",
+            "expected_status": 200,
+            "validation": "rule_exists_in_list"
+          },
+          {
+            "step": "test_rule_matching",
+            "action": "POST /api/rules/test",
+            "data": {
+              "message_type": "integration_test",
+              "project_path": "/test/project"
+            },
+            "expected_status": 200,
+            "validation": "matching_count_greater_than_zero"
+          }
+        ],
+        "success_criteria": "All steps complete successfully with proper data flow"
+      },
+      {
+        "name": "Rule Update Workflow",
+        "description": "Test rule update workflow with validation and consistency",
+        "steps": [
+          {
+            "step": "create_initial_rule",
+            "action": "POST /api/rules",
+            "data": {
+              "name": "Initial Rule",
+              "message_type": "update_test",
+              "rule_type": "timeout_override",
+              "value": 300,
+              "priority": 50,
+              "enabled": true
+            }
+          },
+          {
+            "step": "update_rule",
+            "action": "PUT /api/rules/{rule_id}",
+            "data": {
+              "name": "Updated Rule",
+              "value": 600,
+              "enabled": false
+            }
+          },
+          {
+            "step": "verify_update",
+            "action": "GET /api/rules/{rule_id}",
+            "validation": "rule_reflects_updates"
+          }
+        ]
+      }
+    ],
+    "mcp_tool_integration": [
+      {
+        "name": "Message Type Rule Application",
+        "description": "Test MCP tool integration with message_type parameter and rule application",
+        "scenario": {
+          "message_type": "error_report",
+          "project_directory": "/test/project",
+          "base_config": {
+            "auto_submit": false,
+            "timeout": 600,
+            "response_text": "Original response"
+          },
+          "expected_applied_config": {
+            "auto_submit": true,
+            "timeout": 300,
+            "response_text": "Modified response with rules applied"
+          }
+        },
+        "validation": "Rules applied correctly to base configuration"
+      },
+      {
+        "name": "Interactive Feedback Session",
+        "description": "Test complete interactive feedback session with rule application",
+        "scenario": {
+          "tool_call": "interactive_feedback",
+          "parameters": {
+            "project_directory": "/test/project",
+            "summary": "Test task completed",
+            "timeout": 600,
+            "message_type": "code_review"
+          },
+          "expected_behavior": {
+            "rules_applied": true,
+            "config_modified": true,
+            "session_created": true
+          }
+        }
+      }
+    ],
+    "cross_component_communication": [
+      {
+        "name": "Frontend to Backend Data Flow",
+        "description": "Test data flow from frontend UI through API to backend storage",
+        "workflow": [
+          {
+            "component": "frontend",
+            "action": "create_rule_form_submission",
+            "data": {
+              "name": "Frontend Test Rule",
+              "message_type": "frontend_test",
+              "rule_type": "response_header",
+              "value": "## Frontend Test Header\n\n"
+            }
+          },
+          {
+            "component": "api",
+            "action": "validate_and_process_request",
+            "validation": [
+              "required_fields_present",
+              "data_types_correct",
+              "business_rules_satisfied"
+            ]
+          },
+          {
+            "component": "backend",
+            "action": "store_rule_data",
+            "validation": [
+              "data_persisted",
+              "indexes_updated",
+              "cache_invalidated"
+            ]
+          }
+        ],
+        "success_criteria": "Data maintains integrity across all components"
+      },
+      {
+        "name": "Error Propagation Chain",
+        "description": "Test error handling and propagation across component boundaries",
+        "error_scenarios": [
+          {
+            "trigger": "invalid_rule_data",
+            "component": "frontend",
+            "expected_propagation": [
+              "api_validation_error",
+              "frontend_error_display",
+              "user_notification"
+            ]
+          },
+          {
+            "trigger": "backend_storage_failure",
+            "component": "backend",
+            "expected_propagation": [
+              "api_error_response",
+              "frontend_error_handling",
+              "user_error_message"
+            ]
+          }
+        ]
+      }
+    ],
+    "real_world_scenarios": [
+      {
+        "name": "Multiple Concurrent Users",
+        "description": "Test system behavior with multiple users performing operations simultaneously",
+        "scenario": {
+          "concurrent_users": 5,
+          "operations_per_user": [
+            "create_rule",
+            "test_rule_matching",
+            "update_rule",
+            "list_rules"
+          ],
+          "duration_seconds": 30,
+          "success_threshold": 95
+        },
+        "validation": "All operations complete successfully with minimal conflicts"
+      },
+      {
+        "name": "Large Rule Set Performance",
+        "description": "Test system performance with large number of rules",
+        "scenario": {
+          "rule_count": 1000,
+          "rule_types": [
+            "auto_submit_override",
+            "timeout_override",
+            "response_header",
+            "response_footer",
+            "custom_config"
+          ],
+          "test_operations": [
+            "rule_matching_performance",
+            "rule_creation_performance",
+            "rule_update_performance",
+            "rule_deletion_performance"
+          ],
+          "performance_targets": {
+            "rule_matching_ms": 50,
+            "rule_creation_ms": 200,
+            "rule_update_ms": 200,
+            "rule_deletion_ms": 100
+          }
+        }
+      },
+      {
+        "name": "Network Failure Recovery",
+        "description": "Test system behavior during network failures and recovery",
+        "failure_scenarios": [
+          {
+            "type": "api_timeout",
+            "duration_seconds": 5,
+            "expected_behavior": "graceful_degradation"
+          },
+          {
+            "type": "connection_loss",
+            "duration_seconds": 10,
+            "expected_behavior": "retry_mechanism"
+          },
+          {
+            "type": "partial_failure",
+            "affected_components": ["storage"],
+            "expected_behavior": "error_handling_and_recovery"
+          }
+        ]
+      }
+    ],
+    "data_consistency_tests": [
+      {
+        "name": "CRUD Operations Consistency",
+        "description": "Test data consistency across Create, Read, Update, Delete operations",
+        "test_sequence": [
+          {
+            "operation": "create",
+            "validation": "data_stored_correctly"
+          },
+          {
+            "operation": "read",
+            "validation": "data_retrieved_accurately"
+          },
+          {
+            "operation": "update",
+            "validation": "changes_applied_correctly"
+          },
+          {
+            "operation": "delete",
+            "validation": "data_removed_completely"
+          }
+        ]
+      },
+      {
+        "name": "Concurrent Modification Handling",
+        "description": "Test handling of concurrent modifications to the same data",
+        "scenario": {
+          "concurrent_operations": [
+            {
+              "user": "user_1",
+              "operation": "update_rule",
+              "field": "name",
+              "value": "User 1 Update"
+            },
+            {
+              "user": "user_2", 
+              "operation": "update_rule",
+              "field": "priority",
+              "value": 75
+            }
+          ],
+          "expected_behavior": "last_write_wins_or_conflict_resolution"
+        }
+      }
+    ],
+    "performance_benchmarks": [
+      {
+        "name": "End-to-End Workflow Performance",
+        "description": "Measure performance of complete workflows",
+        "benchmarks": [
+          {
+            "workflow": "rule_creation_to_application",
+            "target_time_ms": 500,
+            "steps": [
+              "create_rule",
+              "store_rule",
+              "apply_rule",
+              "return_result"
+            ]
+          },
+          {
+            "workflow": "rule_matching_performance",
+            "target_time_ms": 50,
+            "test_conditions": {
+              "rule_count": 100,
+              "message_types": 10,
+              "project_patterns": 20
+            }
+          }
+        ]
+      },
+      {
+        "name": "System Resource Usage",
+        "description": "Monitor system resource usage during operations",
+        "metrics": [
+          {
+            "metric": "memory_usage",
+            "target": "< 100MB for 1000 rules"
+          },
+          {
+            "metric": "cpu_usage",
+            "target": "< 50% during normal operations"
+          },
+          {
+            "metric": "storage_space",
+            "target": "< 10MB for 1000 rules"
+          }
+        ]
+      }
+    ]
+  },
+  "test_configuration": {
+    "environment": {
+      "test_timeout_seconds": 300,
+      "retry_attempts": 3,
+      "concurrent_user_limit": 10,
+      "performance_measurement_iterations": 5
+    },
+    "validation_rules": {
+      "data_consistency": "strict",
+      "performance_tolerance": 10,
+      "error_handling": "comprehensive",
+      "security_validation": "enabled"
+    },
+    "reporting": {
+      "generate_detailed_logs": true,
+      "include_performance_metrics": true,
+      "create_visual_reports": false,
+      "export_formats": ["json", "text"]
+    }
+  }
+}

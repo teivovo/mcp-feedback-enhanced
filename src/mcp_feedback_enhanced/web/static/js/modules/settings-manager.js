@@ -29,7 +29,7 @@
             autoClose: false,
             language: 'zh-TW',
             imageSizeLimit: 0,
-            enableBase64Detail: false,
+            enableBase64Detail: true,
             activeTab: 'combined',
             sessionPanelCollapsed: false,
             // 自動定時提交設定

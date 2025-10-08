@@ -1,0 +1,79 @@
+﻿[2025-10-08 03:23:47.849] [INFO] ============================================================
+[2025-10-08 03:23:47.850] [INFO] DevWrapper.__init__() called
+[2025-10-08 03:23:47.850] [INFO] Runtime log file: C:\Users\KelvinLAW\Documents\augment-projects\mcp-feedback-dev\logs\devwrapper_runtime_20251008_032347.log
+[2025-10-08 03:23:47.850] [INFO] ============================================================
+[2025-10-08 03:23:47.850] [DEBUG] Reload marker path: C:\Users\KELVIN~1\AppData\Local\Temp\mcp_reload_request
+[2025-10-08 03:23:47.854] [DEBUG] Crash loop prevention initialized
+[2025-10-08 03:23:47.855] [DEBUG] Initializing MessageProxy...
+[2025-10-08 03:23:47.857] [INFO] MessageProxy initialized
+[2025-10-08 03:23:47.857] [DEBUG] Initializing file watcher...
+[2025-10-08 03:23:47.873] [INFO] File watcher: <mcp_feedback_enhanced.dev_file_watcher.FileWatcher object at 0x000002B46C091210>
+[2025-10-08 03:23:47.874] [INFO] DevWrapper initialization complete
+[2025-10-08 03:23:47.874] [INFO] ============================================================
+[2025-10-08 03:23:47.874] [INFO] spawn_backend() called
+[2025-10-08 03:23:47.877] [DEBUG] Backend command: C:\Users\KelvinLAW\Documents\augment-projects\mcp-feedback-dev\.venv\Scripts\python.exe -m mcp_feedback_enhanced server
+[2025-10-08 03:23:47.877] [DEBUG] Removed MCP_DEV_MODE from backend environment
+[2025-10-08 03:23:47.901] [INFO] Backend process spawned with PID: 50188
+[2025-10-08 03:23:48.403] [INFO] Backend process started successfully and is running
+[2025-10-08 03:23:48.407] [INFO] ============================================================
+[2025-10-08 03:23:48.407] [INFO] forward_messages() called
+[2025-10-08 03:23:48.408] [INFO] Platform: win32
+[2025-10-08 03:23:48.408] [INFO] Starting I/O threads for Windows...
+[2025-10-08 03:23:48.408] [DEBUG] read_stdin thread started
+[2025-10-08 03:23:48.408] [DEBUG] read_backend thread started
+[2025-10-08 03:23:48.408] [DEBUG] read_backend_stderr thread started
+[2025-10-08 03:23:48.408] [DEBUG] STDIN READ #1: {"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"nam...
+[2025-10-08 03:23:48.413] [INFO] I/O threads started successfully (stdin, stdout, stderr)
+[2025-10-08 03:23:48.413] [DEBUG] Processing stdin message: {"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{...
+[2025-10-08 03:23:48.413] [INFO] Parsed JSON-RPC: method=initialize, id=0
+[2025-10-08 03:23:48.413] [DEBUG] Forwarding to backend
+[2025-10-08 03:23:48.413] [DEBUG] Message forwarded to backend successfully
+[2025-10-08 03:23:50.266] [ERROR] BACKEND STDERR #1: [2025-10-08 03:23:50.266] [CONFIG] Failed to create encryption key: [Errno 13] Permission denied: '.mcp_key'
+[2025-10-08 03:23:50.273] [ERROR] BACKEND STDERR #2: [2025-10-08 03:23:50.266] [CONFIG] Decryption failed: [Errno 13] Permission denied: '.mcp_key'
+[2025-10-08 03:23:50.275] [ERROR] BACKEND STDERR #3: [2025-10-08 03:23:50.268] [CONFIG] Configuration loaded from file
+[2025-10-08 03:23:50.276] [ERROR] BACKEND STDERR #4: [2025-10-08 03:23:50.269] [CONFIG] Applied environment variable: MCP_DEBUG
+[2025-10-08 03:23:50.278] [ERROR] BACKEND STDERR #5: [2025-10-08 03:23:50.270] [CONFIG] ConfigManager initialized with file: C:\Users\KelvinLAW\Documents\augment-projects\mcp-feedback-dev\mcp_config.json
+[2025-10-08 03:23:50.280] [ERROR] BACKEND STDERR #6: [2025-10-08 03:23:50.270] [CONFIG] Global configuration manager initialized
+[2025-10-08 03:23:50.280] [ERROR] BACKEND STDERR #7: [2025-10-08 03:23:50.270] [MIDDLEWARE] MCPLoggingMiddleware initialized
+[2025-10-08 03:23:50.285] [ERROR] BACKEND STDERR #8: [2025-10-08 03:23:50.270] [MIDDLEWARE] Global middleware initialized
+[2025-10-08 03:23:50.286] [ERROR] BACKEND STDERR #9: [2025-10-08 03:23:50.270] [SERVER] ðŸš€ å•Ÿå‹•äº’å‹•å¼å›žé¥‹æ”¶é›† MCP æœå‹™å™¨
+[2025-10-08 03:23:50.286] [ERROR] BACKEND STDERR #10: [2025-10-08 03:23:50.270] [SERVER]    æœå‹™å™¨åç¨±: äº’å‹•å¼å›žé¥‹æ”¶é›† MCP
+[2025-10-08 03:23:50.290] [ERROR] BACKEND STDERR #11: [2025-10-08 03:23:50.270] [SERVER]    ç‰ˆæœ¬: 2.5.4
+[2025-10-08 03:23:50.290] [ERROR] BACKEND STDERR #12: [2025-10-08 03:23:50.272] [SERVER]    å¹³å°: win32
+[2025-10-08 03:23:50.292] [ERROR] BACKEND STDERR #13: [2025-10-08 03:23:50.272] [SERVER]    ç·¨ç¢¼åˆå§‹åŒ–: æˆåŠŸ
+[2025-10-08 03:23:50.293] [ERROR] BACKEND STDERR #14: [2025-10-08 03:23:50.272] [SERVER]    é ç«¯ç’°å¢ƒ: False
+[2025-10-08 03:23:50.293] [ERROR] BACKEND STDERR #15: [2025-10-08 03:23:50.272] [SERVER]    WSL ç’°å¢ƒ: False
+[2025-10-08 03:23:50.296] [ERROR] BACKEND STDERR #16: [2025-10-08 03:23:50.273] [SERVER]    æ¡Œé¢æ¨¡å¼: ç¦ç”¨
+[2025-10-08 03:23:50.296] [ERROR] BACKEND STDERR #17: [2025-10-08 03:23:50.273] [SERVER]    ä»‹é¢é¡žåž‹: Web UI
+[2025-10-08 03:23:50.296] [ERROR] BACKEND STDERR #18: [2025-10-08 03:23:50.273] [SERVER]    é…ç½®ç®¡ç†å™¨: å·²åˆå§‹åŒ–
+[2025-10-08 03:23:50.301] [ERROR] BACKEND STDERR #19: [2025-10-08 03:23:50.273] [SERVER]    MCP æ—¥èªŒä¸­é–“ä»¶: å·²åˆå§‹åŒ–
+[2025-10-08 03:23:50.301] [ERROR] BACKEND STDERR #20: [2025-10-08 03:23:50.273] [SERVER]    ç­‰å¾…ä¾†è‡ª AI åŠ©æ‰‹çš„èª¿ç”¨...
+[2025-10-08 03:23:50.301] [DEBUG] BACKEND READ #1: {"jsonrpc":"2.0","id":0,"result":{"protocolVersion":"2025-03-26","capabilities":{"experimental":{},"...
+[2025-10-08 03:23:50.304] [ERROR] BACKEND STDERR #21: [2025-10-08 03:23:50.273] [SERVER]    Telegram ç›´æŽ¥é€šçŸ¥: å·²é…ç½®
+[2025-10-08 03:23:50.305] [ERROR] BACKEND STDERR #22: [2025-10-08 03:23:50.275] [SERVER] æº–å‚™å•Ÿå‹• MCP ä¼ºæœå™¨...
+[2025-10-08 03:23:50.305] [ERROR] BACKEND STDERR #23: [2025-10-08 03:23:50.275] [SERVER] èª¿ç”¨ mcp.run()...
+[2025-10-08 03:23:50.309] [ERROR] BACKEND STDERR #24: [10/08/25 03:23:50] INFO     Starting MCP server 'äº’å‹•å¼å›žé¥‹æ”¶é›† server.py:1246
+[2025-10-08 03:23:50.310] [ERROR] BACKEND STDERR #25: MCP' with transport 'stdio'
+[2025-10-08 03:23:50.316] [DEBUG] Processing backend message: {"jsonrpc":"2.0","id":0,"result":{"protocolVersion":"2025-03-26","capabilities":...
+[2025-10-08 03:23:50.316] [INFO] Parsed backend JSON-RPC: id=0, has_result=True, has_error=False
+[2025-10-08 03:23:50.319] [DEBUG] Forwarding to VS Code
+[2025-10-08 03:23:50.319] [DEBUG] Message forwarded to VS Code successfully
+[2025-10-08 03:23:50.319] [DEBUG] STDIN READ #2: {"method":"notifications/initialized","jsonrpc":"2.0"}
+...
+[2025-10-08 03:23:50.321] [DEBUG] STDIN READ #3: {"method":"tools/list","jsonrpc":"2.0","id":1}
+...
+[2025-10-08 03:23:50.321] [DEBUG] Processing stdin message: {"method":"notifications/initialized","jsonrpc":"2.0"}
+...
+[2025-10-08 03:23:50.321] [INFO] Parsed JSON-RPC: method=notifications/initialized, id=N/A
+[2025-10-08 03:23:50.321] [DEBUG] Forwarding to backend
+[2025-10-08 03:23:50.321] [DEBUG] Message forwarded to backend successfully
+[2025-10-08 03:23:50.342] [DEBUG] Processing stdin message: {"method":"tools/list","jsonrpc":"2.0","id":1}
+...
+[2025-10-08 03:23:50.343] [INFO] Parsed JSON-RPC: method=tools/list, id=1
+[2025-10-08 03:23:50.344] [DEBUG] Forwarding to backend
+[2025-10-08 03:23:50.344] [DEBUG] Message forwarded to backend successfully
+[2025-10-08 03:23:50.344] [DEBUG] BACKEND READ #2: {"jsonrpc":"2.0","id":1,"result":{"tools":[{"name":"interactive_feedback","description":"æ”¶é›†ç”¨æˆ¶çš„äº’å‹•å›žé¥‹ï¼Œæ”¯...
+[2025-10-08 03:23:50.344] [DEBUG] Processing backend message: {"jsonrpc":"2.0","id":1,"result":{"tools":[{"name":"interactive_feedback","descr...
+[2025-10-08 03:23:50.344] [INFO] Parsed backend JSON-RPC: id=1, has_result=True, has_error=False
+[2025-10-08 03:23:50.350] [DEBUG] Forwarding to VS Code
+[2025-10-08 03:23:50.350] [DEBUG] Message forwarded to VS Code successfully

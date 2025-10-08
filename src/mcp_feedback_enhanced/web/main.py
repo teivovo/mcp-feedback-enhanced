@@ -330,6 +330,7 @@ class WebUIManager:
             self.current_session._cleanup_sync()
 
         session_id = str(uuid.uuid4())
+        # Store the comprehensive summary (which includes session activity log + feedback request)
         session = WebFeedbackSession(session_id, project_directory, summary, message_type)
 
         # 將全局標籤頁狀態繼承到新會話

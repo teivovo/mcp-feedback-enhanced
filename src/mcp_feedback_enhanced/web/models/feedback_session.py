@@ -15,6 +15,7 @@ import shlex
 import subprocess
 import threading
 import time
+import uuid
 from collections.abc import Callable
 from datetime import datetime
 from enum import Enum
@@ -128,6 +129,11 @@ class WebFeedbackSession:
         self.project_directory = project_directory
         self.summary = summary
         self.message_type = message_type
+
+        # Debug logging to trace summary content
+        from ...debug import debug_log
+        debug_log(f"WebFeedbackSession created with summary length: {len(summary)}", "SESSION_DEBUG")
+        debug_log(f"Summary preview: {summary[:200]}...", "SESSION_DEBUG")
         self.websocket: WebSocket | None = None
         self.feedback_result: str | None = None
         self.images: list[dict] = []
@@ -366,9 +372,27 @@ class WebFeedbackSession:
 
             if completed:
                 debug_log(f"會話 {self.session_id} 收到用戶回饋")
+                
+                # Format response with image URLs and browser instruction
+                response_parts = []
+                
+                # Add text feedback
+                if self.feedback_result:
+                    response_parts.append(f"User replied: \"{self.feedback_result}\"")
+                
+                # Add image URLs with browser instruction
+                image_urls = [img.get('url') for img in self.images if img.get('url')]
+                if image_urls:
+                    response_parts.append(f"\n📸 Images attached ({len(image_urls)}):")
+                    for i, url in enumerate(image_urls, 1):
+                        response_parts.append(f"  {i}. {url}")
+                    response_parts.append("\n⚠️ IMPORTANT: Use your browser/web tool to view these images at the URLs above.")
+                
+                formatted_feedback = "\n".join(response_parts) if response_parts else "(empty reply)"
+                
                 return {
                     "logs": "\n".join(self.command_logs),
-                    "interactive_feedback": self.feedback_result or "",
+                    "interactive_feedback": formatted_feedback,
                     "images": self.images,
                     "settings": self.settings,
                 }
@@ -445,23 +469,44 @@ class WebFeedbackSession:
 
         # 重構：不再自動關閉 WebSocket，保持連接以支援頁面持久性
 
-    def _process_images(self, images: list[dict]) -> list[dict]:
+    def _process_images(self, images: list[dict], save_to_disk: bool = True) -> list[dict]:
         """
         處理圖片數據，轉換為統一格式
 
         Args:
             images: 原始圖片數據列表
+            save_to_disk: 是否將圖片保存到磁盤並生成 URL (預設: True)
 
         Returns:
-            List[dict]: 處理後的圖片數據
+            List[dict]: 處理後的圖片數據，包含 'data' (bytes) 和可選的 'url' (str)
         """
         processed_images = []
 
         # 從設定中獲取圖片大小限制，如果沒有設定則使用預設值
         size_limit = self.settings.get("image_size_limit", MAX_IMAGE_SIZE)
 
+        # 設置上傳目錄（與 router 共享）
+        uploads_dir = None
+        if save_to_disk:
+            try:
+                # From feedback_session.py: parent x5 to get to project root
+                uploads_dir = Path(__file__).parent.parent.parent.parent.parent / 'router' / 'uploads'
+                uploads_dir.mkdir(parents=True, exist_ok=True)
+                debug_log(f"圖片上傳目錄: {uploads_dir}")
+            except Exception as e:
+                debug_log(f"創建上傳目錄失敗: {e}")
+                save_to_disk = False  # 如果目錄創建失敗，禁用磁盤保存
+
         for img in images:
             try:
+                # Handle Telegram images
+                if img.get("source") == "telegram" and img.get("telegram_file_id"):
+                    telegram_image = self._process_telegram_image(img)
+                    if telegram_image:
+                        processed_images.append(telegram_image)
+                    continue
+
+                # Handle regular web UI images
                 if not all(key in img for key in ["name", "data", "size"]):
                     continue
 
@@ -472,7 +517,7 @@ class WebFeedbackSession:
                     )
                     continue
 
-                # 解碼 base64 數據
+                # 解碼 base64 數據並保持為 bytes 格式
                 if isinstance(img["data"], str):
                     try:
                         image_bytes = base64.b64decode(img["data"])
@@ -486,13 +531,37 @@ class WebFeedbackSession:
                     debug_log(f"圖片 {img['name']} 數據為空，跳過")
                     continue
 
-                processed_images.append(
-                    {
-                        "name": img["name"],
-                        "data": image_bytes,  # 保存原始 bytes 數據
-                        "size": len(image_bytes),
-                    }
-                )
+                # 構建結果字典
+                result = {
+                    "name": img["name"],
+                    "data": image_bytes,  # 保存原始 bytes 數據
+                    "type": img.get("type", "image/png"),  # 保留 MIME 類型
+                    "size": len(image_bytes),
+                }
+
+                # 如果啟用磁盤保存，保存圖片並生成 URL
+                if save_to_disk and uploads_dir:
+                    try:
+                        # 生成唯一文件名
+                        filename = f"{uuid.uuid4()}.png"
+                        filepath = uploads_dir / filename
+
+                        # 保存圖片到磁盤
+                        with open(filepath, 'wb') as f:
+                            f.write(image_bytes)
+
+                        # 生成可訪問的 URL
+                        image_url = f"http://localhost:8080/uploads/{filename}"
+                        result['url'] = image_url
+
+                        debug_log(
+                            f"圖片 {img['name']} 已保存: {filename}, URL: {image_url}"
+                        )
+                    except Exception as e:
+                        debug_log(f"保存圖片 {img['name']} 到磁盤失敗: {e}")
+                        # 繼續處理，即使保存失敗也返回 bytes 數據
+
+                processed_images.append(result)
 
                 debug_log(
                     f"圖片 {img['name']} 處理成功，大小: {len(image_bytes)} bytes"
@@ -503,6 +572,76 @@ class WebFeedbackSession:
                 continue
 
         return processed_images
+
+    def _process_telegram_image(self, telegram_img: dict) -> dict | None:
+        """
+        處理 Telegram 圖片，下載並轉換為統一格式
+
+        Args:
+            telegram_img: Telegram 圖片資訊
+
+        Returns:
+            dict: 處理後的圖片數據，失敗時返回 None
+        """
+        try:
+            import requests
+            import base64
+
+            file_id = telegram_img["telegram_file_id"]
+            bot_token = telegram_img["telegram_bot_token"]
+
+            debug_log(f"Processing Telegram image: {file_id}", "TELEGRAM_IMAGE")
+
+            # 使用同步 requests 而不是異步 aiohttp
+            file_info_url = f"https://api.telegram.org/bot{bot_token}/getFile?file_id={file_id}"
+
+            # 獲取文件信息
+            response = requests.get(file_info_url, timeout=10)
+            if response.status_code != 200:
+                debug_log(f"Failed to get file info: HTTP {response.status_code}", "TELEGRAM_IMAGE")
+                return None
+
+            file_data = response.json()
+            if not file_data.get("ok"):
+                debug_log(f"Telegram API error: {file_data}", "TELEGRAM_IMAGE")
+                return None
+
+            file_path = file_data["result"]["file_path"]
+
+            # 下載圖片
+            download_url = f"https://api.telegram.org/file/bot{bot_token}/{file_path}"
+            img_response = requests.get(download_url, timeout=30)
+
+            if img_response.status_code != 200:
+                debug_log(f"Failed to download image: HTTP {img_response.status_code}", "TELEGRAM_IMAGE")
+                return None
+
+            image_data = img_response.content
+
+            # 轉換為 base64
+            image_base64 = base64.b64encode(image_data).decode('utf-8')
+
+            # 確定文件類型
+            file_ext = file_path.split('.')[-1].lower() if '.' in file_path else "jpg"
+            mime_type = f"image/{file_ext}" if file_ext in ['jpg', 'jpeg', 'png', 'gif', 'webp'] else "image/jpeg"
+
+            # 創建統一格式的圖片對象 (使用原始 base64 字符串，與 web UI 格式一致)
+            processed_image = {
+                "name": f"telegram_image_{file_id}.{file_ext}",
+                "data": image_base64,  # 使用原始 base64 字符串，不是 data URL
+                "size": len(image_data),
+                "type": mime_type,
+                "source": "telegram",
+                "telegram_file_id": file_id,
+                "caption": telegram_img.get("caption", "")
+            }
+
+            debug_log(f"Successfully processed Telegram image: {len(image_data)} bytes", "TELEGRAM_IMAGE")
+            return processed_image
+
+        except Exception as e:
+            debug_log(f"Error processing Telegram image {file_id}: {e}", "TELEGRAM_IMAGE")
+            return None
 
     def add_log(self, log_entry: str):
         """添加命令日誌"""
@@ -722,6 +861,19 @@ class WebFeedbackSession:
                 self.status = SessionStatus.ERROR
             else:
                 self.status = SessionStatus.COMPLETED
+            
+            # 6.5 Send telegram notification for session end
+            if reason in [CleanupReason.TIMEOUT, CleanupReason.EXPIRED, CleanupReason.ERROR]:
+                try:
+                    from ...utils.telegram_manager import send_session_end_notification
+                    asyncio.create_task(
+                        send_session_end_notification(
+                            self.project_directory,
+                            reason.value
+                        )
+                    )
+                except Exception as e:
+                    debug_log(f"Failed to send session end notification: {e}")
 
             # 7. 調用清理回調函數
             for callback in self.cleanup_callbacks:

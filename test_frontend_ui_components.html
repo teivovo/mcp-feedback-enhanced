@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frontend UI Components Automated Test Suite</title>
+    <link rel="stylesheet" href="src/mcp_feedback_enhanced/web/static/css/styles.css">
+    <style>
+        :root {
+            --test-success: #4caf50;
+            --test-warning: #ff9800;
+            --test-error: #dc3545;
+            --test-info: #2196f3;
+        }
+        
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+        
+        .test-suite-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .test-header {
+            background: var(--bg-secondary);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .test-header h1 {
+            margin: 0 0 10px 0;
+            color: var(--accent-color);
+            font-size: 24px;
+        }
+        
+        .test-controls {
+            background: rgba(0, 122, 204, 0.1);
+            border: 1px solid var(--accent-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .test-controls h3 {
+            margin: 0 0 15px 0;
+            color: var(--accent-color);
+        }
+        
+        .control-group {
+            margin-bottom: 15px;
+        }
+        
+        .btn {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 8px;
+            font-size: 14px;
+            transition: background 0.2s ease;
+        }
+        
+        .btn:hover {
+            background: #005a9e;
+        }
+        
+        .btn-success {
+            background: var(--test-success);
+        }
+        
+        .btn-warning {
+            background: var(--test-warning);
+        }
+        
+        .btn-error {
+            background: var(--test-error);
+        }
+        
+        .btn-info {
+            background: var(--test-info);
+        }
+        
+        .test-results {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .test-section {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .test-section h3 {
+            margin: 0 0 15px 0;
+            color: var(--text-primary);
+            font-size: 18px;
+        }
+        
+        .test-output {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+        
+        .test-status {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+            margin-right: 8px;
+        }
+        
+        .test-status.pass {
+            background: rgba(76, 175, 80, 0.2);
+            color: var(--test-success);
+        }
+        
+        .test-status.fail {
+            background: rgba(220, 53, 69, 0.2);
+            color: var(--test-error);
+        }
+        
+        .test-status.skip {
+            background: rgba(158, 158, 158, 0.2);
+            color: var(--text-secondary);
+        }
+        
+        .test-status.running {
+            background: rgba(33, 150, 243, 0.2);
+            color: var(--test-info);
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: var(--accent-color);
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+        
+        .test-summary {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 10px;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .hidden-test-area {
+            position: absolute;
+            left: -9999px;
+            top: -9999px;
+            width: 1000px;
+            height: 800px;
+            background: white;
+        }
+        
+        @media (max-width: 768px) {
+            .test-results {
+                grid-template-columns: 1fr;
+            }
+            
+            .summary-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="test-suite-container">
+        <div class="test-header">
+            <h1>🧪 Frontend UI Components Automated Test Suite</h1>
+            <p>Comprehensive automated testing for the Auto-Submit UI Enhancement frontend components including rules management interface, accordion functionality, form validation, and responsive design.</p>
+        </div>
+        
+        <div class="test-controls">
+            <h3>🎮 Test Controls</h3>
+            
+            <div class="control-group">
+                <strong>Component Tests:</strong><br>
+                <button class="btn btn-success" onclick="runRulesManagerTests()" aria-label="Run Rules Manager Tests">📋 Rules Manager Tests</button>
+                <button class="btn btn-info" onclick="runAccordionTests()" aria-label="Run Accordion Tests">🗂️ Accordion Tests</button>
+                <button class="btn btn-warning" onclick="runFormValidationTests()" aria-label="Run Form Validation Tests">📝 Form Validation Tests</button>
+                <button class="btn" onclick="runResponsiveTests()" aria-label="Run Responsive Design Tests">📱 Responsive Tests</button>
+            </div>
+            
+            <div class="control-group">
+                <strong>Integration Tests:</strong><br>
+                <button class="btn btn-info" onclick="runUIInteractionTests()" aria-label="Run UI Interaction Tests">🖱️ UI Interaction Tests</button>
+                <button class="btn" onclick="runKeyboardNavigationTests()" aria-label="Run Keyboard Navigation Tests">⌨️ Keyboard Navigation Tests</button>
+                <button class="btn btn-warning" onclick="runAccessibilityTests()" aria-label="Run Accessibility Tests">♿ Accessibility Tests</button>
+            </div>
+            
+            <div class="control-group">
+                <strong>Test Suites:</strong><br>
+                <button class="btn btn-success" onclick="runAllTests()" aria-label="Run All Tests">🚀 Run All Tests</button>
+                <button class="btn btn-error" onclick="clearResults()" aria-label="Clear Test Results">🗑️ Clear Results</button>
+                <button class="btn btn-info" onclick="generateReport()" aria-label="Generate Test Report">📊 Generate Report</button>
+            </div>
+            
+            <div class="progress-bar">
+                <div class="progress-fill" id="testProgress"></div>
+            </div>
+        </div>
+        
+        <div class="test-results">
+            <div class="test-section">
+                <h3>📋 Test Execution Log</h3>
+                <div class="test-output" id="testLog" role="log" aria-label="Test execution log output">
+Ready to run tests...
+                </div>
+            </div>
+
+            <div class="test-section">
+                <h3>🎯 Test Results</h3>
+                <div class="test-output" id="testResults" role="status" aria-label="Test results summary">
+No tests executed yet.
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-summary">
+            <h3>📊 Test Summary</h3>
+            <div class="summary-stats">
+                <div class="stat-item">
+                    <div class="stat-value" id="totalTests">0</div>
+                    <div class="stat-label">Total Tests</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="passedTests" style="color: var(--test-success);">0</div>
+                    <div class="stat-label">Passed</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="failedTests" style="color: var(--test-error);">0</div>
+                    <div class="stat-label">Failed</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="successRate">0%</div>
+                    <div class="stat-label">Success Rate</div>
+                </div>
+            </div>
+            <div class="test-output" id="testSummary">
+Test summary will appear here after running tests.
+            </div>
+        </div>
+        
+        <!-- Hidden test area for DOM manipulation tests -->
+        <div class="hidden-test-area" id="hiddenTestArea"></div>
+    </div>
+
+    <!-- Load the rules manager and test framework -->
+    <script src="src/mcp_feedback_enhanced/web/static/js/modules/rules-manager.js"></script>
+    <script src="test_frontend_automation.js"></script>
+    
+    <script>
+        // Initialize the test framework when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🧪 Frontend UI Components Test Suite initialized');
+            
+            // Initialize test framework
+            if (window.FrontendTestFramework) {
+                window.testFramework = new window.FrontendTestFramework();
+                window.testFramework.initialize();
+                console.log('✅ Test framework ready');
+            } else {
+                console.error('❌ Test framework not loaded');
+            }
+        });
+        
+        // Test control functions
+        function runRulesManagerTests() {
+            if (window.testFramework) {
+                window.testFramework.runRulesManagerTests();
+            }
+        }
+        
+        function runAccordionTests() {
+            if (window.testFramework) {
+                window.testFramework.runAccordionTests();
+            }
+        }
+        
+        function runFormValidationTests() {
+            if (window.testFramework) {
+                window.testFramework.runFormValidationTests();
+            }
+        }
+        
+        function runResponsiveTests() {
+            if (window.testFramework) {
+                window.testFramework.runResponsiveTests();
+            }
+        }
+        
+        function runUIInteractionTests() {
+            if (window.testFramework) {
+                window.testFramework.runUIInteractionTests();
+            }
+        }
+        
+        function runKeyboardNavigationTests() {
+            if (window.testFramework) {
+                window.testFramework.runKeyboardNavigationTests();
+            }
+        }
+        
+        function runAccessibilityTests() {
+            if (window.testFramework) {
+                window.testFramework.runAccessibilityTests();
+            }
+        }
+        
+        function runAllTests() {
+            if (window.testFramework) {
+                window.testFramework.runAllTests();
+            }
+        }
+        
+        function clearResults() {
+            if (window.testFramework) {
+                window.testFramework.clearResults();
+            }
+        }
+        
+        function generateReport() {
+            if (window.testFramework) {
+                window.testFramework.generateReport();
+            }
+        }
+    </script>
+</body>
+</html>
