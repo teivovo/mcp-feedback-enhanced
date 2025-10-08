@@ -30,7 +30,7 @@ import json
 import os
 import sys
 import time
-from typing import Annotated, Any
+from typing import Annotated, Any, Optional
 
 from fastmcp import FastMCP
 from fastmcp.utilities.types import Image
@@ -73,6 +73,13 @@ from .utils.config_manager import (
 
 # 導入直接 Telegram 通知功能
 from .utils.telegram_manager import send_telegram_notification
+
+# 導入 Router Integration
+from .utils.router_integration import RouterIntegration
+
+# ===== 全局變量 =====
+# Router integration instance (initialized in main())
+_router_integration: Optional[RouterIntegration] = None
 
 
 # ===== 編碼初始化 =====
@@ -607,16 +614,37 @@ async def interactive_feedback(
             project_directory = os.getcwd()
         project_directory = os.path.abspath(project_directory)
 
-        # 發送 Telegram 通知（直接 API 調用，無需橋接器）
+        # 發送 Telegram 通知（通過 Router 路由）
         telegram_notification_sent = False
-        try:
-            telegram_notification_sent = await send_telegram_notification(summary, project_directory)
-            if telegram_notification_sent:
-                debug_log("Telegram 通知發送成功")
+        if is_telegram_enabled():
+            router = get_router_integration()
+            if router:
+                try:
+                    # Format message for Telegram with Markdown
+                    telegram_message = (
+                        f"📋 **New Feedback Request**\\n\\n"
+                        f"{summary}\\n\\n"
+                        f"📁 Project: {project_directory}\\n"
+                        f"🆔 Session: {session_id[:8]}"
+                    )
+
+                    # Send via router
+                    telegram_notification_sent = router.send_to_telegram(
+                        session_id=session_id,
+                        message=telegram_message,
+                        images=None  # Images handled later via callback
+                    )
+
+                    if telegram_notification_sent:
+                        debug_log("✅ Telegram 通知已通過 Router 發送")
+                    else:
+                        debug_log("⚠️ Telegram 通知發送失敗")
+                except Exception as e:
+                    debug_log(f"⚠️ Telegram 通知發送異常: {e}")
             else:
-                debug_log("Telegram 通知發送失敗或已停用")
-        except Exception as e:
-            debug_log(f"Telegram 通知發送異常: {e}")
+                debug_log("⚠️ Router 不可用，跳過 Telegram 通知")
+        else:
+            debug_log("Telegram 通知已停用")
 
         # 使用 Web 模式
         debug_log("回饋模式: web")
@@ -1039,6 +1067,17 @@ def reload_server() -> str:
         raise
 
 
+# ===== Router Integration Helper =====
+def get_router_integration() -> Optional[RouterIntegration]:
+    """
+    Get the global router integration instance.
+
+    Returns:
+        RouterIntegration instance if initialized, None otherwise
+    """
+    return _router_integration
+
+
 # ===== 主程式入口 =====
 def main():
     """主要入口點，用於套件執行"""
@@ -1077,6 +1116,34 @@ def main():
         'include_response_data': logging_config.include_response_data
     }
     middleware = initialize_middleware(middleware_config)
+
+    # Initialize Telegram Router integration if enabled
+    global _router_integration
+    if is_telegram_enabled():
+        telegram_config = config_manager.get_telegram_config()
+        if telegram_config.enabled:
+            try:
+                # Get web UI port for callback URL
+                web_port = int(os.getenv('MCP_WEB_PORT', '8765'))
+
+                _router_integration = RouterIntegration(
+                    router_url=os.getenv('ROUTER_URL', 'http://localhost:8080'),
+                    instance_name=f"MCP-Feedback-{web_port}",
+                    callback_port=web_port
+                )
+
+                # Start router and register
+                if _router_integration.register_instance():
+                    if debug_enabled:
+                        debug_log("✅ Telegram Router: Registered successfully")
+                else:
+                    if debug_enabled:
+                        debug_log("⚠️ Telegram Router: Registration failed")
+                    _router_integration = None
+            except Exception as e:
+                if debug_enabled:
+                    debug_log(f"❌ Telegram Router initialization failed: {e}")
+                _router_integration = None
 
     if debug_enabled:
         debug_log("🚀 啟動互動式回饋收集 MCP 服務器")

@@ -688,6 +688,81 @@ async def handle_websocket_message(manager: "WebUIManager", session, data: dict)
                 content={"status": "error", "message": f"創建規則失敗: {e!s}"}
             )
 
+    @manager.app.post("/callback")
+    async def telegram_callback(request: Request):
+        """
+        Callback endpoint for Telegram Router to send messages back to MCP.
+        Router calls this when user replies via Telegram.
+        """
+        try:
+            # Parse incoming data
+            data = await request.json()
+
+            session_id = data.get("session_id")
+            message = data.get("message", "")
+            images = data.get("images", [])
+
+            debug_log(f"📥 Received Telegram callback for session {session_id[:8] if session_id else 'unknown'}")
+            debug_log(f"   Message: {message[:50]}..." if len(message) > 50 else f"   Message: {message}")
+            debug_log(f"   Images: {len(images)}")
+
+            # Get current active session
+            current_session = manager.get_current_session()
+
+            if not current_session:
+                debug_log("⚠️ No active session found")
+                return JSONResponse(
+                    status_code=404,
+                    content={"status": "error", "message": "No active session"}
+                )
+
+            # Verify session ID matches (optional - router should route correctly)
+            if session_id and current_session.session_id != session_id:
+                debug_log(f"⚠️ Session ID mismatch: expected {current_session.session_id[:8]}, got {session_id[:8]}")
+
+            # Forward to web UI via WebSocket
+            if current_session.websocket:
+                try:
+                    await current_session.websocket.send_json({
+                        "type": "telegram_message",
+                        "data": {
+                            "message": message,
+                            "images": images,
+                            "timestamp": time.time()
+                        }
+                    })
+                    debug_log("✅ Forwarded to web UI via WebSocket")
+                except Exception as ws_error:
+                    debug_log(f"❌ WebSocket send failed: {ws_error}")
+                    return JSONResponse(
+                        status_code=500,
+                        content={"status": "error", "message": "WebSocket send failed"}
+                    )
+            else:
+                debug_log("⚠️ No WebSocket connection available")
+                return JSONResponse(
+                    status_code=503,
+                    content={"status": "error", "message": "No WebSocket connection"}
+                )
+
+            # Return success to router
+            return JSONResponse(
+                status_code=200,
+                content={
+                    "status": "received",
+                    "session_id": session_id
+                }
+            )
+
+        except Exception as e:
+            debug_log(f"❌ Callback endpoint error: {e}")
+            import traceback
+            debug_log(traceback.format_exc())
+            return JSONResponse(
+                status_code=500,
+                content={"status": "error", "message": str(e)}
+            )
+
 
 async def _delayed_server_stop(manager: "WebUIManager"):
     """延遲停止服務器"""

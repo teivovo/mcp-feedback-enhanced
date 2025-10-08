@@ -81,7 +81,12 @@ class TelegramRouter {
       sessionMaxAge: parseInt(process.env.SESSION_MAX_AGE) || 1800000, // 30 min
       chatId: process.env.TELEGRAM_CHAT_ID
     };
-    
+
+    // Auto-shutdown tracking
+    this.lastActivityTime = Date.now();
+    this.idleShutdownTimeout = parseInt(process.env.IDLE_SHUTDOWN_TIMEOUT) || 600000; // 10 min
+    this.idleCheckInterval = parseInt(process.env.IDLE_CHECK_INTERVAL) || 300000; // 5 min
+
     this.setupRoutes();
     this.setupTelegramHandlers();
     this.startServer(routerPort);
@@ -89,6 +94,12 @@ class TelegramRouter {
   }
 
   setupRoutes() {
+    // Middleware to track activity for auto-shutdown
+    this.app.use((req, res, next) => {
+      this.lastActivityTime = Date.now();
+      next();
+    });
+
     // Serve uploaded images
     this.app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -111,6 +122,44 @@ class TelegramRouter {
       console.log(`✅ Registered: ${instance_name} (${instance_id}) on port ${port}`);
       console.log(`   Callback URL: ${callback_url}`);
       res.json({ status: 'registered', instance_id });
+    });
+
+    // Endpoint for MCP instances to deregister
+    this.app.post('/deregister', (req, res) => {
+      const { instance_id } = req.body;
+
+      if (!instance_id) {
+        return res.status(400).json({ error: 'Missing instance_id' });
+      }
+
+      const instance = this.instances.get(instance_id);
+      if (!instance) {
+        return res.status(404).json({ error: 'Instance not found' });
+      }
+
+      // Remove instance
+      this.instances.delete(instance_id);
+
+      // Clean up any sessions for this instance
+      let cleanedSessions = 0;
+      for (const [sessionId, sessionData] of this.sessions.entries()) {
+        if (sessionData.instance_id === instance_id) {
+          this.sessions.delete(sessionId);
+          this.messageThreads.delete(sessionData.telegram_msg_id);
+          cleanedSessions++;
+        }
+      }
+
+      console.log(`✅ Deregistered: ${instance.instance_name} (${instance_id})`);
+      if (cleanedSessions > 0) {
+        console.log(`   🧹 Cleaned ${cleanedSessions} sessions`);
+      }
+
+      res.json({
+        status: 'deregistered',
+        instance_id,
+        cleaned_sessions: cleanedSessions
+      });
     });
 
     // Endpoint for MCP instances to send messages to Telegram
@@ -653,6 +702,24 @@ ${instances || 'None registered'}
       
       if (cleaned > 0) {
         console.log(`🧹 Cleaned up ${cleaned} expired sessions`);
+      }
+
+      // Check for idle shutdown
+      const idleTime = now - this.lastActivityTime;
+      const noInstances = this.instances.size === 0;
+      const noSessions = this.sessions.size === 0;
+
+      if (noInstances && noSessions && idleTime > this.idleShutdownTimeout) {
+        console.log('═══════════════════════════════════════');
+        console.log('🛑 Router Auto-Shutdown');
+        console.log('═══════════════════════════════════════');
+        console.log(`   Reason: No activity for ${Math.floor(idleTime / 60000)} minutes`);
+        console.log(`   Instances: ${this.instances.size}`);
+        console.log(`   Sessions: ${this.sessions.size}`);
+        console.log('═══════════════════════════════════════');
+        console.log('Router will restart automatically when needed.');
+        console.log('Shutting down gracefully...');
+        process.exit(0);
       }
     }, this.config.sessionCleanupInterval);
   }
