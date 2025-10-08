@@ -68,6 +68,7 @@ def setup_routes(manager: "WebUIManager"):
                     "title": "MCP Feedback Enhanced",
                     "has_session": False,
                     "version": __version__,
+                    "cache_bust": str(int(time.time())),
                 },
             )
 
@@ -79,6 +80,7 @@ def setup_routes(manager: "WebUIManager"):
             "feedback.html",
             {
                 "request": request,
+                "session_id": current_session.session_id,
                 "project_directory": current_session.project_directory,
                 "summary": current_session.summary,
                 "message_type": getattr(current_session, 'message_type', 'general'),
@@ -87,6 +89,7 @@ def setup_routes(manager: "WebUIManager"):
                 "has_session": True,
                 "layout_mode": layout_mode,
                 "i18n": manager.i18n,
+                "cache_bust": str(int(time.time())),
             },
         )
 

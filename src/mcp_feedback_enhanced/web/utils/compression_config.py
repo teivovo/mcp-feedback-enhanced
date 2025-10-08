@@ -90,9 +90,15 @@ class CompressionConfig:
         headers = {}
 
         if path.startswith("/static/"):
-            # 靜態文件緩存
-            headers["Cache-Control"] = f"public, max-age={self.static_cache_max_age}"
-            headers["Expires"] = self._get_expires_header(self.static_cache_max_age)
+            # JavaScript 文件不緩存（使用 URL 參數進行版本控制）
+            if path.endswith(".js"):
+                headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+                headers["Pragma"] = "no-cache"
+                headers["Expires"] = "0"
+            else:
+                # 其他靜態文件緩存
+                headers["Cache-Control"] = f"public, max-age={self.static_cache_max_age}"
+                headers["Expires"] = self._get_expires_header(self.static_cache_max_age)
         elif path.startswith("/api/") and self.api_cache_max_age > 0:
             # API 緩存（如果啟用）
             headers["Cache-Control"] = f"public, max-age={self.api_cache_max_age}"
